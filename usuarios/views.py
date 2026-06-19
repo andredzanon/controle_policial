@@ -9,7 +9,7 @@ Usuario = get_user_model()
 
 @login_required
 def dashboard(request):
-    if request.user.nivel not in ['admin_master', 'administrador']:
+    if request.user.nivel not in ['admin_master', 'administrador'] and not request.user.is_superuser:
         return HttpResponseForbidden("Acesso restrito.")
     
     # Exclude the current logged in user from list or just list everyone? Let's list everyone.
@@ -19,7 +19,7 @@ def dashboard(request):
 @login_required
 @require_POST
 def api_salvar_usuario(request):
-    if request.user.nivel not in ['admin_master', 'administrador']:
+    if request.user.nivel not in ['admin_master', 'administrador'] and not request.user.is_superuser:
         return JsonResponse({'error': 'Acesso negado.'}, status=403)
 
     try:
