@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Gestão de Usuários - SJP Police System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <h3 class="mb-0">Gestão de Usuários</h3>
+        <button class="btn btn-primary" onclick="abrirModalUsuario()"><i class="bi bi-person-plus"></i> Cadastrar Policial</button>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4 border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome Completo</th>
+                        <th>Login (Username)</th>
+                        <th>Perfil de Acesso</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in tropa %}
+                    <tr>
+                        <td class="fw-bold">{{ p.first_name }}</td>
+                        <td>{{ p.username }}</td>
+                        <td>
+                            {% if p.nivel == 'admin_master' %}
+                                <span class="badge bg-danger">Admin Master</span>
+                            {% elif p.nivel == 'administrador' %}
+                                <span class="badge bg-primary">Administrador</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Operador</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalUsuario({{ p.pk }}, '{{ p.username }}', '{{ p.first_name }}', '{{ p.nivel }}')" title="Editar">
+                                <i class="bi bi-pencil"></i> Editar
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-secondary py-4">Nenhum usuário cadastrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cadastrar/Editar Usuário -->
+<div class="modal fade" id="modalUsuario" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalUsuarioTitle">Cadastrar Policial</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formUsuario">
+                    <input type="hidden" id="u_id">
+                    <div class="mb-3">
+                        <label class="form-label">Nome Completo</label>
+                        <input type="text" class="form-control" id="u_nome" placeholder="Ex: Sd. João Silva" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Login de Acesso</label>
+                        <input type="text" class="form-control" id="u_login" placeholder="Ex: jsilva" required>
+                        <div class="form-text text-danger" id="senha_hint">A senha padrão para novos cadastros será: <strong>senha123</strong></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Perfil de Acesso</label>
+                        <select class="form-select" id="u_nivel" required>
+                            <option value="operador">Operador (Apenas Registros Diários)</option>
+                            <option value="administrador">Administrador (Gestão Total)</option>
+                            {% if user.nivel == 'admin_master' %}
+                            <option value="admin_master">Admin Master (Sistema Core)</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="salvarUsuario()">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const modalUsuario = new bootstrap.Modal(document.getElementById('modalUsuario'));
+
+function abrirModalUsuario(id='', login='', nome='', nivel='operador') {
+    document.getElementById('u_id').value = id;
+    document.getElementById('u_login').value = login;
+    document.getElementById('u_nome').value = nome;
+    document.getElementById('u_nivel').value = nivel;
+    
+    document.getElementById('modalUsuarioTitle').innerText = id ? 'Editar Policial' : 'Cadastrar Policial';
+    
+    // Ocultar dica de senha padrão se for edição
+    if(id) {
+        document.getElementById('senha_hint').style.display = 'none';
+        document.getElementById('u_login').readOnly = true; // Evitar trocar login na edição para não quebrar vínculos (opcional)
+    } else {
+        document.getElementById('senha_hint').style.display = 'block';
+        document.getElementById('u_login').readOnly = false;
+    }
+    
+    modalUsuario.show();
+}
+
+async function salvarUsuario() {
+    let payload = {
+        id: document.getElementById('u_id').value,
+        username: document.getElementById('u_login').value,
+        first_name: document.getElementById('u_nome').value,
+        nivel: document.getElementById('u_nivel').value
+    };
+
+    if(!payload.username || !payload.first_name) {
+        alert("Preencha o Login e Nome Completo."); return;
+    }
+
+    try {
+        let response = await fetch("{% url 'usuarios:api_salvar_usuario' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(payload)
+        });
+        let result = await response.json();
+        
+        if(response.ok) {
+            alert(result.message);
+            location.reload();
+        } else {
+            alert("Erro: " + result.error);
+        }
+    } catch(e) { 
+        alert("Erro de conexão"); 
+    }
+}
+</script>
+{% endblock %}

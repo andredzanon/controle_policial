@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico de Ocorrências - SJP Police System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <h3 class="mb-0">Histórico de Ocorrências</h3>
+        <div class="btn-group">
+            <a href="{% url 'ocorrencias:index' %}" class="btn btn-outline-secondary">Registrar</a>
+            <a href="{% url 'ocorrencias:historico' %}" class="btn btn-outline-primary active">Histórico</a>
+            <button class="btn btn-outline-secondary">Estatísticas</button>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="data" class="form-label">Filtrar por Data</label>
+                <input type="date" class="form-control" id="data" name="data" value="{{ data_filtro }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Buscar</button>
+                <a href="{% url 'ocorrencias:historico' %}" class="btn btn-secondary">Limpar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle shadow-sm rounded overflow-hidden">
+        <thead class="table-dark">
+            <tr>
+                <th>Data</th>
+                <th>Viatura</th>
+                <th>Comandante</th>
+                <th>Registro Salvo Em</th>
+                <th class="text-end">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for turno in turnos %}
+            <tr>
+                <td>{{ turno.data|date:"d/m/Y" }}</td>
+                <td>{{ turno.viatura.prefixo }}</td>
+                <td>{{ turno.comandante }}</td>
+                <td>{{ turno.created_at|date:"d/m/Y H:i" }}</td>
+                <td class="text-end">
+                    <button class="btn btn-sm btn-success" onclick="abrirWhatsApp({{ turno.pk }})" title="Enviar via WhatsApp">
+                        <i class="bi bi-whatsapp"></i>
+                    </button>
+                    <!-- Linkando a edição ao Django Admin para facilitar o MVP de entidades complexas -->
+                    <a href="/admin/ocorrencias/relatorioturno/{{ turno.pk }}/change/" target="_blank" class="btn btn-sm btn-outline-secondary" title="Editar no Painel Admin">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    {% if user.nivel == 'admin_master' or user.nivel == 'administrador' %}
+                    <button class="btn btn-sm btn-outline-danger" onclick="excluirRelatorio({{ turno.pk }})" title="Excluir">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center text-secondary py-4">Nenhum registro encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal invisível apenas para gerar o texto e enviar p/ whats -->
+<textarea id="hiddenText" style="display:none;"></textarea>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function abrirWhatsApp(pk) {
+    try {
+        let response = await fetch("{% url 'ocorrencias:api_obter_texto_relatorio' 0 %}".replace('0', pk));
+        let result = await response.json();
+        
+        if (response.ok) {
+            let text = result.texto;
+            let url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
+            window.open(url, '_blank');
+        } else {
+            alert("Erro ao gerar texto: " + result.error);
+        }
+    } catch (err) {
+        alert("Erro de conexão.");
+    }
+}
+
+async function excluirRelatorio(pk) {
+    if (confirm("Tem certeza que deseja excluir este relatório permanentemente?")) {
+        try {
+            let response = await fetch("{% url 'ocorrencias:deletar_relatorio' 0 %}".replace('0', pk), {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            });
+            let result = await response.json();
+            
+            if (response.ok) {
+                alert(result.message);
+                location.reload();
+            } else {
+                alert("Erro: " + result.error);
+            }
+        } catch (err) {
+            alert("Erro de conexão.");
+        }
+    }
+}
+</script>
+{% endblock %}

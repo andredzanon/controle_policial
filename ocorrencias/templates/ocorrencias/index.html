@@ -1,0 +1,461 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Ocorrências - SJP Police System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h3 class="mb-0">Registro de Turno de Serviço</h3>
+        <div class="btn-group">
+            <a href="{% url 'ocorrencias:index' %}" class="btn btn-outline-primary active">Registrar</a>
+            <a href="{% url 'ocorrencias:historico' %}" class="btn btn-outline-secondary">Histórico</a>
+            <button class="btn btn-outline-secondary">Estatísticas</button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Formulário SPA -->
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-body-tertiary">
+                <h5 class="card-title mb-0">Dados do Turno</h5>
+            </div>
+            <div class="card-body">
+                <form id="formOcorrencias">
+                    {% csrf_token %}
+                    <!-- Dados Iniciais -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label for="data" class="form-label">Data *</label>
+                            <input type="date" class="form-control" id="data" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="viatura" class="form-label">Viatura *</label>
+                            <select class="form-select" id="viatura" required>
+                                <option value="" disabled selected>Selecione a Viatura</option>
+                                {% for v in viaturas %}
+                                    <option value="{{ v.prefixo }}">{{ v.prefixo }} - {{ v.modelo }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="comandante" class="form-label">Comandante / Equipe *</label>
+                            <input type="text" class="form-control" id="comandante" placeholder="Nome do Cmt" required>
+                        </div>
+                    </div>
+
+                    <!-- Accordion para as demais seções -->
+                    <div class="accordion" id="accordionSecoes">
+                        
+                        <!-- Veículos Abordados -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseVeiculos">
+                                    Veículos Abordados
+                                </button>
+                            </h2>
+                            <div id="collapseVeiculos" class="accordion-collapse collapse show" data-bs-parent="#accordionSecoes">
+                                <div class="accordion-body">
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-sm-6">
+                                            <label class="form-label">Automóveis</label>
+                                            <input type="number" class="form-control stat-input sum-veiculo" data-category="veiculos_abordados" data-label="Automóvel|Automóveis" min="0" value="0">
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label">Motocicletas</label>
+                                            <input type="number" class="form-control stat-input sum-veiculo" data-category="veiculos_abordados" data-label="Motocicleta|Motocicletas" min="0" value="0">
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label text-secondary small mb-1">Adicionar outros veículos</label>
+                                        <div id="listaOutrosVeiculos" class="mb-2"></div>
+                                        <div class="row g-2 align-items-end">
+                                            <div class="col-sm-5">
+                                                <select class="form-select" id="inputOutroVeiculoTipo">
+                                                    <option value="Bicicleta motorizada">Bicicleta motorizada</option>
+                                                    <option value="Caminhão">Caminhão</option>
+                                                    <option value="Ônibus">Ônibus</option>
+                                                    <option value="Outros">Outros</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-sm-4">
+                                                <input type="number" class="form-control" id="inputOutroVeiculoQtd" placeholder="Qtd" min="1">
+                                            </div>
+                                            <div class="col-sm-3">
+                                                <button type="button" class="btn btn-outline-success w-100" onclick="addListRow('listaOutrosVeiculos', 'Outro Veículo', ['inputOutroVeiculoTipo', 'inputOutroVeiculoQtd'], true)"><i class="bi bi-plus"></i> Add</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pessoas Abordadas -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePessoas">
+                                    Pessoas Abordadas
+                                </button>
+                            </h2>
+                            <div id="collapsePessoas" class="accordion-collapse collapse" data-bs-parent="#accordionSecoes">
+                                <div class="accordion-body">
+                                    <div class="row g-3">
+                                        <div class="col-sm-4">
+                                            <label class="form-label">Condutores</label>
+                                            <input type="number" class="form-control stat-input" id="inputCondutores" data-category="pessoas_abordadas" data-label="Condutor|Condutores" min="0" value="0">
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label">Passageiros</label>
+                                            <input type="number" class="form-control stat-input" data-category="pessoas_abordadas" data-label="Passageiro|Passageiros" min="0" value="0">
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label">Transeuntes</label>
+                                            <input type="number" class="form-control stat-input" data-category="pessoas_abordadas" data-label="Transeunte|Transeuntes" min="0" value="0">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Teste Etilométrico -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEtilometrico">
+                                    Teste Etilométrico
+                                </button>
+                            </h2>
+                            <div id="collapseEtilometrico" class="accordion-collapse collapse" data-bs-parent="#accordionSecoes">
+                                <div class="accordion-body">
+                                    <div class="row g-3">
+                                        <div class="col-sm-6">
+                                            <label class="form-label">Testes Realizados</label>
+                                            <input type="number" class="form-control stat-input" data-category="teste_etilometrico" data-label="Teste Realizado|Testes Realizados" min="0" value="0">
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label">Recusas</label>
+                                            <input type="number" class="form-control stat-input" data-category="teste_etilometrico" data-label="Recusa|Recusas" min="0" value="0">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Apreensões e Prisões -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseApreensoes">
+                                    Apreensões e Prisões
+                                </button>
+                            </h2>
+                            <div id="collapseApreensoes" class="accordion-collapse collapse" data-bs-parent="#accordionSecoes">
+                                <div class="accordion-body">
+                                    <div class="mb-3">
+                                        <label class="form-label text-primary fw-bold">Prisões Efetuadas</label>
+                                        <div id="listaPrisoes" class="mb-2"></div>
+                                        <div class="row g-2 align-items-end">
+                                            <div class="col-sm-5">
+                                                <select class="form-select" id="inputSexo">
+                                                    <option value="M">Masculino</option>
+                                                    <option value="F">Feminino</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-sm-4">
+                                                <input type="number" class="form-control" id="inputIdade" placeholder="Idade" min="1">
+                                            </div>
+                                            <div class="col-sm-3">
+                                                <button type="button" class="btn btn-outline-success w-100" onclick="addListRow('listaPrisoes', 'Prisão', ['inputSexo', 'inputIdade'])"><i class="bi bi-plus"></i> Add</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="mb-3">
+                                        <label class="form-label text-primary fw-bold">Drogas Apreendidas</label>
+                                        <div id="listaDrogas" class="mb-2"></div>
+                                        <div class="row g-2 align-items-end">
+                                            <div class="col-sm-4">
+                                                <select class="form-select" id="inputDroga">
+                                                    <option value="" disabled selected>Tipo</option>
+                                                    <option value="Maconha">Maconha</option>
+                                                    <option value="Cocaína">Cocaína</option>
+                                                    <option value="Crack">Crack</option>
+                                                    <option value="Metanfetamina">Metanfetamina</option>
+                                                    <option value="Heroína">Heroína</option>
+                                                    <option value="LSD">LSD</option>
+                                                    <option value="Cogumelos Alucinógenos">Cogumelos</option>
+                                                    <option value="Êxtase (MDMA)">Êxtase (MDMA)</option>
+                                                    <option value="Quetamina">Quetamina</option>
+                                                    <option value="Inalantes/Solventes">Inalantes/Solventes</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-sm-3">
+                                                <input type="number" class="form-control" id="inputQtdDroga" placeholder="Qtd" min="0.1" step="0.1">
+                                            </div>
+                                            <div class="col-sm-2">
+                                                <select class="form-select" id="inputMedidaDroga">
+                                                    <option value="g">g</option><option value="kg">kg</option><option value="und">und</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-sm-3">
+                                                <button type="button" class="btn btn-outline-success w-100" onclick="addListRow('listaDrogas', 'Droga', ['inputDroga', 'inputQtdDroga', 'inputMedidaDroga'])"><i class="bi bi-plus"></i> Add</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="mb-3">
+                                        <label class="form-label text-primary fw-bold">Dinheiro Apreendido (R$)</label>
+                                        <input type="number" class="form-control" id="inputDinheiro" placeholder="0.00" min="0" step="0.01">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Observações -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseObs">
+                                    Observações do Turno
+                                </button>
+                            </h2>
+                            <div id="collapseObs" class="accordion-collapse collapse" data-bs-parent="#accordionSecoes">
+                                <div class="accordion-body">
+                                    <textarea class="form-control" id="observacoes" rows="3" placeholder="Insira quaisquer outras observações relevantes..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div> <!-- End Accordion -->
+
+                    <hr class="my-4">
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" onclick="resetForm();">Limpar</button>
+                        <button type="button" class="btn btn-primary" id="btnGerarRelatorio">
+                            <i class="bi bi-file-earmark-text"></i> Gerar Relatório
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Área de Visualização e Exportação -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm sticky-top" style="top: 20px; z-index: 1;">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Resumo do Relatório</h5>
+            </div>
+            <div class="card-body">
+                <textarea class="form-control mb-3 text-white bg-dark" style="font-family: monospace; font-size: 0.9rem;" id="textoRelatorio" rows="15" readonly>Preencha os dados e clique em "Gerar Relatório".</textarea>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-success" disabled id="btnWhatsApp">
+                        <i class="bi bi-whatsapp"></i> Enviar p/ WhatsApp
+                    </button>
+                    <button class="btn btn-outline-primary" disabled id="btnSalvar">
+                        <i class="bi bi-cloud-arrow-up"></i> Salvar no Banco
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Data structure to hold dynamic list items
+let dynamicLists = {
+    'listaPrisoes': [],
+    'listaDrogas': [],
+    'listaOutrosVeiculos': []
+};
+
+// Auto-set today's date
+document.getElementById('data').valueAsDate = new Date();
+
+// Sum logic for vehicles -> drivers
+function updateCondutoresSum() {
+    let sum = 0;
+    document.querySelectorAll('.sum-veiculo').forEach(input => {
+        sum += parseInt(input.value) || 0;
+    });
+    // Add dynamically added other vehicles
+    dynamicLists['listaOutrosVeiculos'].forEach(item => {
+        sum += parseInt(item[1]) || 0;
+    });
+    document.getElementById('inputCondutores').value = sum;
+}
+
+document.querySelectorAll('.sum-veiculo').forEach(input => {
+    input.addEventListener('input', updateCondutoresSum);
+});
+
+function addListRow(listId, type, inputIds, triggerSumUpdate = false) {
+    let values = [];
+    let valid = true;
+    inputIds.forEach(id => {
+        let val = document.getElementById(id).value;
+        if (!val) valid = false;
+        values.push(val);
+    });
+
+    if (!valid) { alert('Preencha os campos corretamente.'); return; }
+
+    dynamicLists[listId].push(values);
+    renderList(listId, type, triggerSumUpdate);
+    
+    // Clear inputs
+    inputIds.forEach(id => { 
+        if(document.getElementById(id).tagName !== 'SELECT') {
+            document.getElementById(id).value = ''; 
+        } else {
+            document.getElementById(id).selectedIndex = 0;
+        }
+    });
+
+    if (triggerSumUpdate) updateCondutoresSum();
+}
+
+function removeListRow(listId, index, type, triggerSumUpdate = false) {
+    dynamicLists[listId].splice(index, 1);
+    renderList(listId, type, triggerSumUpdate);
+    if (triggerSumUpdate) updateCondutoresSum();
+}
+
+function renderList(listId, type, triggerSumUpdate = false) {
+    let container = document.getElementById(listId);
+    container.innerHTML = '';
+    dynamicLists[listId].forEach((item, index) => {
+        let text = item.join(' ');
+        container.innerHTML += `
+            <div class="d-flex justify-content-between align-items-center bg-light p-2 mb-1 border rounded text-dark">
+                <span><i class="bi bi-check2-circle text-success me-2"></i> ${text}</span>
+                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="removeListRow('${listId}', ${index}, '${type}', ${triggerSumUpdate})"><i class="bi bi-x"></i></button>
+            </div>
+        `;
+    });
+}
+
+function resetForm() {
+    document.getElementById('formOcorrencias').reset();
+    document.getElementById('data').valueAsDate = new Date();
+    ['listaPrisoes', 'listaDrogas', 'listaOutrosVeiculos'].forEach(list => {
+        dynamicLists[list] = [];
+        document.getElementById(list).innerHTML = '';
+    });
+    document.getElementById('textoRelatorio').value = "Preencha os dados e clique em 'Gerar Relatório'.";
+    document.getElementById('btnWhatsApp').disabled = true;
+    document.getElementById('btnSalvar').disabled = true;
+}
+
+function getPayload() {
+    let payload = {
+        data: document.getElementById('data').value,
+        viatura: document.getElementById('viatura').value,
+        comandante: document.getElementById('comandante').value,
+        stats: {},
+        prisoes: dynamicLists['listaPrisoes'],
+        drogas: dynamicLists['listaDrogas'],
+        outros_veiculos: dynamicLists['listaOutrosVeiculos'],
+        observacoes: document.getElementById('observacoes').value,
+        dinheiro_apreendido: parseFloat(document.getElementById('inputDinheiro').value) || 0
+    };
+
+    document.querySelectorAll('.stat-input').forEach(input => {
+        let val = parseInt(input.value) || 0;
+        if(val > 0) {
+            let cat = input.getAttribute('data-category');
+            if(!payload.stats[cat]) payload.stats[cat] = [];
+            payload.stats[cat].push({
+                valor: val,
+                label: input.getAttribute('data-label')
+            });
+        }
+    });
+
+    return payload;
+}
+
+// Logic to request text generation from Backend API (RNF-20)
+document.getElementById('btnGerarRelatorio').addEventListener('click', async function() {
+    let payload = getPayload();
+
+    if(!payload.data || !payload.viatura || !payload.comandante) {
+        alert("Preencha a Data, Viatura e Comandante.");
+        return;
+    }
+
+    let btn = document.getElementById('btnGerarRelatorio');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Gerando...';
+    btn.disabled = true;
+
+    try {
+        let response = await fetch("{% url 'ocorrencias:api_gerar_relatorio' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(payload)
+        });
+
+        let result = await response.json();
+        
+        if(response.ok) {
+            document.getElementById('textoRelatorio').value = result.texto;
+            document.getElementById('btnWhatsApp').disabled = false;
+            document.getElementById('btnSalvar').disabled = false;
+        } else {
+            alert("Erro: " + result.error);
+        }
+    } catch(err) {
+        alert("Erro na conexão com o servidor.");
+    } finally {
+        btn.innerHTML = '<i class="bi bi-file-earmark-text"></i> Gerar Relatório';
+        btn.disabled = false;
+    }
+});
+
+// WhatsApp Share
+document.getElementById('btnWhatsApp').addEventListener('click', function() {
+    let text = document.getElementById('textoRelatorio').value;
+    let url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
+    window.open(url, '_blank');
+});
+
+// Logic to Save to Database (RNF-15, SPA)
+document.getElementById('btnSalvar').addEventListener('click', async function() {
+    let payload = getPayload();
+
+    let btn = document.getElementById('btnSalvar');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Salvando...';
+    btn.disabled = true;
+
+    try {
+        let response = await fetch("{% url 'ocorrencias:api_salvar_relatorio' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(payload)
+        });
+
+        let result = await response.json();
+        
+        if(response.ok) {
+            alert(result.message);
+            resetForm();
+        } else {
+            alert("Erro: " + result.error);
+            btn.disabled = false;
+        }
+    } catch(err) {
+        alert("Erro na conexão com o servidor.");
+        btn.disabled = false;
+    } finally {
+        btn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i> Salvar no Banco';
+    }
+});
+</script>
+{% endblock scripts %}

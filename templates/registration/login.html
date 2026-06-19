@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Login - SJP Police System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-body p-4 text-center">
+                <i class="bi bi-shield-lock text-primary" style="font-size: 3rem;"></i>
+                <h4 class="mb-4 mt-2">Acesso Restrito</h4>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    {% if form.errors %}
+                        <div class="alert alert-danger" role="alert">
+                            Usuário ou senha incorretos. Tente novamente.
+                        </div>
+                    {% endif %}
+                    
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="id_username" name="username" placeholder="Usuário" required autofocus>
+                        <label for="id_username">Usuário</label>
+                    </div>
+                    <div class="form-floating mb-4">
+                        <input type="password" class="form-control" id="id_password" name="password" placeholder="Senha" required>
+                        <label for="id_password">Senha</label>
+                    </div>
+                    
+                    <button class="btn btn-primary w-100 py-2" type="submit">Entrar no Sistema</button>
+                    <input type="hidden" name="next" value="{{ next }}">
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

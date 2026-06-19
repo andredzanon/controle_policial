@@ -1,0 +1,28 @@
+/* Custom styles to refine the Bootstrap default look */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Ensure the app takes at least the full viewport height */
+html, body {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Adjustments for the dark theme to make it slightly darker blueish gray */
+[data-bs-theme="dark"] {
+    --bs-body-bg: #121820;
+    --bs-body-color: #e0e6ed;
+    --bs-tertiary-bg: #1a2332;
+}
+
+/* Accordion custom styling for mobile */
+.accordion-button:focus {
+    box-shadow: none;
+    border-color: rgba(0,0,0,.125);
+}

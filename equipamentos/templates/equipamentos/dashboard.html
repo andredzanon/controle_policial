@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Equipamentos - SJP Police System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <h3 class="mb-0">Controle de Equipamentos e Patrimônio</h3>
+        <button class="btn btn-primary" onclick="abrirModalEquipamento()"><i class="bi bi-box-seam"></i> Cadastrar Equipamento</button>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4 border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Patrimônio</th>
+                        <th>Nome do Equipamento</th>
+                        <th>Tipo</th>
+                        <th>Status</th>
+                        <th>Localização/Obs</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in equipamentos %}
+                    <tr>
+                        <td class="fw-bold">{{ e.numero_patrimonio }}</td>
+                        <td>{{ e.nome }}</td>
+                        <td>
+                            {% if e.tipo == 'arma' %}<i class="bi bi-crosshair me-1"></i>
+                            {% elif e.tipo == 'municao' %}<i class="bi bi-bullseye me-1"></i>
+                            {% elif e.tipo == 'colete' %}<i class="bi bi-shield me-1"></i>
+                            {% elif e.tipo == 'celular' %}<i class="bi bi-phone me-1"></i>
+                            {% elif e.tipo == 'algemas' %}<i class="bi bi-link me-1"></i>
+                            {% elif e.tipo == 'expediente' %}<i class="bi bi-paperclip me-1"></i>
+                            {% else %}<i class="bi bi-cone-striped me-1"></i>{% endif %}
+                            {{ e.get_tipo_display }}
+                        </td>
+                        <td>
+                            {% if e.status == 'operante' %}
+                                <span class="badge bg-success">Operante</span>
+                            {% elif e.status == 'defeito' %}
+                                <span class="badge bg-danger">Com Defeito</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Em Manutenção</span>
+                            {% endif %}
+                        </td>
+                        <td class="small text-secondary">
+                            {% if e.localizacao_atual %}<strong>Local:</strong> {{ e.localizacao_atual }}<br>{% endif %}
+                            {% if e.observacoes %}<strong>Obs:</strong> {{ e.observacoes }}{% endif %}
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalEquipamento({{ e.pk }}, '{{ e.numero_patrimonio|escapejs }}', '{{ e.nome|escapejs }}', '{{ e.tipo }}', '{{ e.status }}', '{{ e.localizacao_atual|escapejs|default:"" }}', '{{ e.observacoes|escapejs|default:"" }}')" title="Editar">
+                                <i class="bi bi-pencil"></i> Editar
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-secondary py-4">Nenhum equipamento cadastrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cadastrar/Editar Equipamento -->
+<div class="modal fade" id="modalEquipamento" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEquipamentoTitle">Cadastrar Equipamento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEquipamento">
+                    <input type="hidden" id="e_id">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nº do Patrimônio</label>
+                            <input type="text" class="form-control" id="e_patrimonio" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select" id="e_tipo" required>
+                                <option value="arma">Armamento</option>
+                                <option value="municao">Munição</option>
+                                <option value="colete">Colete Balístico / EPI</option>
+                                <option value="celular">Celular Institucional</option>
+                                <option value="algemas">Algemas</option>
+                                <option value="expediente">Material de Expediente</option>
+                                <option value="outros">Outros (Cones, Extintores, etc)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Nome/Descrição do Equipamento</label>
+                        <input type="text" class="form-control" id="e_nome" placeholder="Ex: Pistola Taurus PT100" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Status Atual</label>
+                        <select class="form-select" id="e_status" required>
+                            <option value="operante">Operante</option>
+                            <option value="defeito">Com Defeito</option>
+                            <option value="manutencao">Em Manutenção</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Localização Atual</label>
+                        <input type="text" class="form-control" id="e_local" placeholder="Ex: Reserva de Armas">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Observações</label>
+                        <textarea class="form-control" id="e_obs" rows="2" placeholder="Detalhes adicionais, avarias, etc..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="salvarEquipamento()">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const modalEquipamento = new bootstrap.Modal(document.getElementById('modalEquipamento'));
+
+function abrirModalEquipamento(id='', patrimonio='', nome='', tipo='arma', status='operante', local='', obs='') {
+    document.getElementById('e_id').value = id;
+    document.getElementById('e_patrimonio').value = patrimonio;
+    document.getElementById('e_nome').value = nome;
+    document.getElementById('e_tipo').value = tipo;
+    document.getElementById('e_status').value = status;
+    document.getElementById('e_local').value = local;
+    document.getElementById('e_obs').value = obs;
+    
+    document.getElementById('modalEquipamentoTitle').innerText = id ? 'Editar Equipamento' : 'Cadastrar Equipamento';
+    modalEquipamento.show();
+}
+
+async function salvarEquipamento() {
+    let payload = {
+        id: document.getElementById('e_id').value,
+        numero_patrimonio: document.getElementById('e_patrimonio').value,
+        nome: document.getElementById('e_nome').value,
+        tipo: document.getElementById('e_tipo').value,
+        status: document.getElementById('e_status').value,
+        localizacao_atual: document.getElementById('e_local').value,
+        observacoes: document.getElementById('e_obs').value
+    };
+
+    if(!payload.numero_patrimonio || !payload.nome) {
+        alert("Preencha o Patrimônio e o Nome."); return;
+    }
+
+    try {
+        let response = await fetch("{% url 'equipamentos:api_salvar_equipamento' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(payload)
+        });
+        let result = await response.json();
+        
+        if(response.ok) {
+            location.reload();
+        } else {
+            alert("Erro: " + result.error);
+        }
+    } catch(e) { 
+        alert("Erro de conexão"); 
+    }
+}
+</script>
+{% endblock %}
