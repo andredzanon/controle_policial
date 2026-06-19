@@ -19,3 +19,7 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Copy project
 COPY . /app/
+
+# Expose port and run Gunicorn
+EXPOSE $PORT
+CMD gunicorn core.wsgi:application --bind 0.0.0.0:$PORT
