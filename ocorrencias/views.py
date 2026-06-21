@@ -262,7 +262,12 @@ def api_obter_texto_relatorio(request, pk):
             total = sum(p.quantidade for p in pessoas)
             linhas.append(f"*PESSOAS ABORDADAS: {total}*")
             for p in pessoas:
-                tipo_str = p.get_tipo_display() if p.quantidade == 1 else f"{p.get_tipo_display()}s"
+                tipo_str = p.get_tipo_display()
+                if p.quantidade > 1:
+                    if tipo_str.lower() == 'condutor':
+                        tipo_str = "Condutores"
+                    else:
+                        tipo_str = f"{tipo_str}s"
                 linhas.append(f"- {p.quantidade} {tipo_str}")
             linhas.append("")
 
@@ -428,7 +433,13 @@ def api_estatisticas(request):
         linhas.append(f"*PESSOAS ABORDADAS: {total}*")
         for p in pessoas:
             tipo_display = p['tipo'].capitalize()
-            tipo_str = tipo_display if p['total'] == 1 else f"{tipo_display}s"
+            if p['total'] > 1:
+                if tipo_display.lower() == 'condutor':
+                    tipo_str = "Condutores"
+                else:
+                    tipo_str = f"{tipo_display}s"
+            else:
+                tipo_str = tipo_display
             linhas.append(f"- {p['total']} {tipo_str}")
         linhas.append("")
 
