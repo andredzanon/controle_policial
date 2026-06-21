@@ -14,7 +14,8 @@ from .models import (
 @login_required
 def index(request):
     viaturas = Viatura.objects.all().order_by('prefixo')
-    return render(request, 'ocorrencias/index.html', {'viaturas': viaturas})
+    edit_id = request.GET.get('edit', '')
+    return render(request, 'ocorrencias/index.html', {'viaturas': viaturas, 'edit_id': edit_id})
 
 @login_required
 @require_POST
@@ -127,14 +128,32 @@ def api_salvar_relatorio(request):
         )
 
         with transaction.atomic():
-            turno = RelatorioTurno.objects.create(
-                data=data_str,
-                viatura=viatura,
-                comandante=comandante,
-                observacoes=data.get('observacoes', ''),
-                dinheiro_apreendido=data.get('dinheiro_apreendido', 0),
-                created_by=request.user
-            )
+            turno_id = data.get('id')
+            if turno_id:
+                turno = RelatorioTurno.objects.get(pk=turno_id)
+                turno.data = data_str
+                turno.viatura = viatura
+                turno.comandante = comandante
+                turno.observacoes = data.get('observacoes', '')
+                turno.dinheiro_apreendido = data.get('dinheiro_apreendido', 0)
+                turno.save()
+                
+                # Excluir vínculos antigos
+                turno.veiculos_abordados.all().delete()
+                turno.pessoas_abordadas.all().delete()
+                if hasattr(turno, 'teste_etilometrico'):
+                    turno.teste_etilometrico.delete()
+                turno.prisoes_apreensoes.all().delete()
+                turno.drogas_apreendidas.all().delete()
+            else:
+                turno = RelatorioTurno.objects.create(
+                    data=data_str,
+                    viatura=viatura,
+                    comandante=comandante,
+                    observacoes=data.get('observacoes', ''),
+                    dinheiro_apreendido=data.get('dinheiro_apreendido', 0),
+                    created_by=request.user
+                )
 
             stats = data.get('stats', {})
             
@@ -157,7 +176,8 @@ def api_salvar_relatorio(request):
             if testes:
                 realizados = sum(t['valor'] for t in testes if 'Realizado' in t['label'])
                 recusas = sum(t['valor'] for t in testes if 'Recusa' in t['label'])
-                TesteEtilometrico.objects.create(turno=turno, realizados=realizados, recusas=recusas)
+                if realizados > 0 or recusas > 0:
+                    TesteEtilometrico.objects.create(turno=turno, realizados=realizados, recusas=recusas)
 
             # Salvar prisoes
             for p in data.get('prisoes', []):
@@ -270,6 +290,65 @@ def api_obter_texto_relatorio(request, pk):
         texto_final = "\n".join(linhas).strip()
         return JsonResponse({'texto': texto_final})
 
+    except RelatorioTurno.DoesNotExist:
+        return JsonResponse({'error': 'Relatório não encontrado.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def api_obter_dados_relatorio_json(request, pk):
+    try:
+        turno = RelatorioTurno.objects.get(pk=pk)
+        
+        payload = {
+            'id': turno.pk,
+            'data': turno.data.strftime('%Y-%m-%d'),
+            'viatura': turno.viatura.prefixo,
+            'comandante': turno.comandante,
+            'observacoes': turno.observacoes or '',
+            'dinheiro_apreendido': float(turno.dinheiro_apreendido),
+            'stats': {
+                'veiculos_abordados': [],
+                'pessoas_abordadas': [],
+                'teste_etilometrico': []
+            },
+            'outros_veiculos': [],
+            'prisoes': [],
+            'drogas': []
+        }
+
+        # Veículos Abordados
+        for v in turno.veiculos_abordados.all():
+            if v.tipo.lower() in ['automóvel', 'motocicleta']:
+                label = f"{v.tipo}|{v.tipo}s" if v.tipo == 'Automóvel' else "Motocicleta|Motocicletas"
+                payload['stats']['veiculos_abordados'].append({'valor': v.quantidade, 'label': label})
+            else:
+                payload['outros_veiculos'].append([v.tipo, v.quantidade])
+
+        # Pessoas Abordadas
+        for p in turno.pessoas_abordadas.all():
+            tipo_cap = p.tipo.capitalize()
+            label = f"{tipo_cap}|{tipo_cap}s"
+            if p.tipo == 'transeunte':
+                label = "Transeunte|Transeuntes"
+            payload['stats']['pessoas_abordadas'].append({'valor': p.quantidade, 'label': label})
+
+        # Teste Etilométrico
+        if hasattr(turno, 'teste_etilometrico'):
+            te = turno.teste_etilometrico
+            payload['stats']['teste_etilometrico'].append({'valor': te.realizados, 'label': 'Teste Realizado|Testes Realizados'})
+            payload['stats']['teste_etilometrico'].append({'valor': te.recusas, 'label': 'Recusa|Recusas'})
+
+        # Prisões
+        for p in turno.prisoes_apreensoes.all():
+            sexo_char = 'M' if p.sexo == 'masculino' else 'F'
+            payload['prisoes'].append([sexo_char, str(p.idade)])
+
+        # Drogas
+        for d in turno.drogas_apreendidas.all():
+            payload['drogas'].append([d.tipo, str(float(d.quantidade)), d.medida])
+
+        return JsonResponse(payload)
     except RelatorioTurno.DoesNotExist:
         return JsonResponse({'error': 'Relatório não encontrado.'}, status=404)
     except Exception as e:

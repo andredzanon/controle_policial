@@ -6,7 +6,7 @@
 {% block content %}
 <div class="row mb-4">
     <div class="col-12 d-flex justify-content-between align-items-center">
-        <h3 class="mb-0">Registro de Turno de Serviço</h3>
+        <h3 class="mb-0" id="pageTitle">Registro de Turno de Serviço</h3>
         <div class="btn-group">
             <a href="{% url 'ocorrencias:index' %}" class="btn btn-outline-primary active">Registrar</a>
             <a href="{% url 'ocorrencias:historico' %}" class="btn btn-outline-secondary">Histórico</a>
@@ -270,6 +270,8 @@ let dynamicLists = {
     'listaOutrosVeiculos': []
 };
 
+let editId = "{{ edit_id }}";
+
 // Auto-set today's date
 document.getElementById('data').valueAsDate = new Date();
 
@@ -361,6 +363,10 @@ function getPayload() {
         dinheiro_apreendido: parseFloat(document.getElementById('inputDinheiro').value) || 0
     };
 
+    if (editId) {
+        payload.id = editId;
+    }
+
     document.querySelectorAll('.stat-input').forEach(input => {
         let val = parseInt(input.value) || 0;
         if(val > 0) {
@@ -445,7 +451,11 @@ document.getElementById('btnSalvar').addEventListener('click', async function() 
         
         if(response.ok) {
             alert(result.message);
-            resetForm();
+            if (editId) {
+                window.location.href = "{% url 'ocorrencias:historico' %}";
+            } else {
+                resetForm();
+            }
         } else {
             alert("Erro: " + result.error);
             btn.disabled = false;
@@ -454,8 +464,62 @@ document.getElementById('btnSalvar').addEventListener('click', async function() 
         alert("Erro na conexão com o servidor.");
         btn.disabled = false;
     } finally {
-        btn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i> Salvar no Banco';
+        btn.innerHTML = editId ? '<i class="bi bi-cloud-arrow-up"></i> Atualizar no Banco' : '<i class="bi bi-cloud-arrow-up"></i> Salvar no Banco';
     }
 });
+
+// Load edit data if present
+async function carregarDadosEdicao() {
+    if (!editId) return;
+    
+    document.getElementById('pageTitle').innerText = "Edição de Turno de Serviço";
+    document.getElementById('btnSalvar').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> Atualizar no Banco';
+    document.getElementById('btnSalvar').disabled = false;
+    
+    try {
+        let res = await fetch("{% url 'ocorrencias:api_obter_dados_relatorio_json' 0 %}".replace('0', editId));
+        if (!res.ok) return;
+        let p = await res.json();
+        
+        document.getElementById('data').value = p.data;
+        document.getElementById('viatura').value = p.viatura;
+        document.getElementById('comandante').value = p.comandante;
+        document.getElementById('observacoes').value = p.observacoes;
+        document.getElementById('inputDinheiro').value = p.dinheiro_apreendido || '';
+        
+        // Populate static stats inputs
+        let allInputs = document.querySelectorAll('.stat-input');
+        Object.keys(p.stats).forEach(cat => {
+            p.stats[cat].forEach(item => {
+                allInputs.forEach(input => {
+                    if (input.getAttribute('data-category') === cat && input.getAttribute('data-label') === item.label) {
+                        input.value = item.valor;
+                    }
+                });
+            });
+        });
+        
+        // Populate dynamic lists
+        dynamicLists['listaPrisoes'] = p.prisoes;
+        renderList('listaPrisoes', 'Prisão');
+        
+        dynamicLists['listaDrogas'] = p.drogas;
+        renderList('listaDrogas', 'Droga');
+        
+        dynamicLists['listaOutrosVeiculos'] = p.outros_veiculos;
+        renderList('listaOutrosVeiculos', 'Outro Veículo', true);
+        
+        updateCondutoresSum();
+        
+        // Optionally generate the preview immediately
+        document.getElementById('btnGerarRelatorio').click();
+        
+    } catch(e) {
+        console.error("Erro ao carregar dados de edição", e);
+    }
+}
+
+// Call on load
+carregarDadosEdicao();
 </script>
 {% endblock scripts %}

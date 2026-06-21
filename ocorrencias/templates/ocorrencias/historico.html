@@ -51,8 +51,8 @@
                     <button class="btn btn-sm btn-success" onclick="abrirWhatsApp({{ turno.pk }})" title="Enviar via WhatsApp">
                         <i class="bi bi-whatsapp"></i>
                     </button>
-                    <!-- Linkando a edição ao Django Admin para facilitar o MVP de entidades complexas -->
-                    <a href="/admin/ocorrencias/relatorioturno/{{ turno.pk }}/change/" target="_blank" class="btn btn-sm btn-outline-secondary" title="Editar no Painel Admin">
+                    <!-- Linkando a edição ao novo frontend -->
+                    <a href="{% url 'ocorrencias:index' %}?edit={{ turno.pk }}" class="btn btn-sm btn-outline-secondary" title="Editar Ocorrência">
                         <i class="bi bi-pencil"></i>
                     </a>
                     {% if user.nivel == 'admin_master' or user.nivel == 'administrador' %}
