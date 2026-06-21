@@ -244,7 +244,16 @@ def api_obter_texto_relatorio(request, pk):
             total = sum(v.quantidade for v in veiculos)
             linhas.append(f"*VEÍCULOS ABORDADOS: {total}*")
             for v in veiculos:
-                linhas.append(f"- {v.quantidade} {v.tipo.capitalize()}")
+                tipo_v = v.tipo.capitalize()
+                if tipo_v.lower() in ['automóvel', 'automovel']:
+                    tipo_str = "Automóvel" if v.quantidade == 1 else "Automóveis"
+                elif tipo_v.lower() == 'caminhão':
+                    tipo_str = "Caminhão" if v.quantidade == 1 else "Caminhões"
+                elif tipo_v.lower() == 'ônibus':
+                    tipo_str = "Ônibus"
+                else:
+                    tipo_str = tipo_v if v.quantidade == 1 else f"{tipo_v}s"
+                linhas.append(f"- {v.quantidade} {tipo_str}")
             linhas.append("")
 
         # Pessoas
@@ -253,7 +262,8 @@ def api_obter_texto_relatorio(request, pk):
             total = sum(p.quantidade for p in pessoas)
             linhas.append(f"*PESSOAS ABORDADAS: {total}*")
             for p in pessoas:
-                linhas.append(f"- {p.quantidade} {p.get_tipo_display()}")
+                tipo_str = p.get_tipo_display() if p.quantidade == 1 else f"{p.get_tipo_display()}s"
+                linhas.append(f"- {p.quantidade} {tipo_str}")
             linhas.append("")
 
         # Etilométrico
@@ -399,7 +409,16 @@ def api_estatisticas(request):
         total = sum(v['total'] for v in veiculos)
         linhas.append(f"*VEÍCULOS ABORDADOS: {total}*")
         for v in veiculos:
-            linhas.append(f"- {v['total']} {v['tipo'].capitalize()}")
+            tipo_v = v['tipo'].capitalize()
+            if tipo_v.lower() in ['automóvel', 'automovel']:
+                tipo_str = "Automóvel" if v['total'] == 1 else "Automóveis"
+            elif tipo_v.lower() == 'caminhão':
+                tipo_str = "Caminhão" if v['total'] == 1 else "Caminhões"
+            elif tipo_v.lower() == 'ônibus':
+                tipo_str = "Ônibus"
+            else:
+                tipo_str = tipo_v if v['total'] == 1 else f"{tipo_v}s"
+            linhas.append(f"- {v['total']} {tipo_str}")
         linhas.append("")
 
     # Pessoas Abordadas
@@ -409,7 +428,8 @@ def api_estatisticas(request):
         linhas.append(f"*PESSOAS ABORDADAS: {total}*")
         for p in pessoas:
             tipo_display = p['tipo'].capitalize()
-            linhas.append(f"- {p['total']} {tipo_display}")
+            tipo_str = tipo_display if p['total'] == 1 else f"{tipo_display}s"
+            linhas.append(f"- {p['total']} {tipo_str}")
         linhas.append("")
 
     # Veículos Recolhidos
@@ -438,8 +458,12 @@ def api_estatisticas(request):
         total = sum(p['total'] for p in prisoes)
         linhas.append(f"*PRISÕES EFETUADAS: {total}*")
         for p in prisoes:
-            sexo_texto = "Masculinos" if p['sexo'] == 'masculino' else "Femininas"
-            linhas.append(f"- {p['total']} Indivíduos ({sexo_texto})")
+            if p['total'] == 1:
+                sexo_texto = "Masculino" if p['sexo'] == 'masculino' else "Feminino"
+                linhas.append(f"- {p['total']} Indivíduo ({sexo_texto})")
+            else:
+                sexo_texto = "Masculinos" if p['sexo'] == 'masculino' else "Femininas"
+                linhas.append(f"- {p['total']} Indivíduos ({sexo_texto})")
         linhas.append("")
         
     # Drogas
