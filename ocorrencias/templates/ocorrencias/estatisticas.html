@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Estatísticas - SJP Police System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <h3 class="mb-0">Painel Estatístico</h3>
+        <div class="btn-group">
+            <a href="{% url 'ocorrencias:index' %}" class="btn btn-outline-secondary">Registrar</a>
+            <a href="{% url 'ocorrencias:historico' %}" class="btn btn-outline-secondary">Histórico</a>
+            <a href="{% url 'ocorrencias:estatisticas' %}" class="btn btn-outline-primary active">Estatísticas</a>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros de Período</h5>
+    </div>
+    <div class="card-body">
+        <div class="mb-3">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tipoFiltro" id="filtroDia" value="dia" checked onchange="toggleFiltro()">
+                <label class="form-check-label" for="filtroDia">Por Dia</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="tipoFiltro" id="filtroPeriodo" value="periodo" onchange="toggleFiltro()">
+                <label class="form-check-label" for="filtroPeriodo">Por Período</label>
+            </div>
+        </div>
+
+        <div id="divFiltroDia" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="data" class="form-label">Selecione o Dia</label>
+                <input type="date" class="form-control" id="data">
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-primary" onclick="gerarEstatistica()"><i class="bi bi-magic"></i> Gerar</button>
+            </div>
+        </div>
+
+        <div id="divFiltroPeriodo" class="row g-3 align-items-end" style="display: none;">
+            <div class="col-md-3">
+                <label for="dataInicio" class="form-label">Data Início</label>
+                <input type="date" class="form-control" id="dataInicio">
+            </div>
+            <div class="col-md-3">
+                <label for="dataFim" class="form-label">Data Fim</label>
+                <input type="date" class="form-control" id="dataFim">
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-primary" onclick="gerarEstatistica()"><i class="bi bi-magic"></i> Gerar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resultado -->
+<div class="card shadow-sm" id="cardResultado" style="display: none;">
+    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Relatório Consolidado</h5>
+        <button class="btn btn-sm btn-light text-success fw-bold" onclick="copiarTexto()">
+            <i class="bi bi-clipboard"></i> Copiar Texto
+        </button>
+    </div>
+    <div class="card-body">
+        <pre id="textoEstatistica" class="mb-0 text-start" style="white-space: pre-wrap; font-family: 'Courier New', Courier, monospace; font-size: 14px;"></pre>
+    </div>
+    <div class="card-footer bg-light text-end">
+        <button class="btn btn-success" onclick="abrirWhatsAppEstatistica()">
+            <i class="bi bi-whatsapp"></i> Enviar para WhatsApp
+        </button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function toggleFiltro() {
+        const isDia = document.getElementById('filtroDia').checked;
+        document.getElementById('divFiltroDia').style.display = isDia ? 'flex' : 'none';
+        document.getElementById('divFiltroPeriodo').style.display = isDia ? 'none' : 'flex';
+        document.getElementById('cardResultado').style.display = 'none';
+    }
+
+    async function gerarEstatistica() {
+        const isDia = document.getElementById('filtroDia').checked;
+        let url = "{% url 'ocorrencias:api_estatisticas' %}?";
+
+        if (isDia) {
+            const data = document.getElementById('data').value;
+            if (!data) {
+                alert("Selecione o dia.");
+                return;
+            }
+            url += "tipo=dia&data=" + data;
+        } else {
+            const dataInicio = document.getElementById('dataInicio').value;
+            const dataFim = document.getElementById('dataFim').value;
+            if (!dataInicio || !dataFim) {
+                alert("Selecione a data de início e fim.");
+                return;
+            }
+            url += "tipo=periodo&data_inicio=" + dataInicio + "&data_fim=" + dataFim;
+        }
+
+        try {
+            document.getElementById('cardResultado').style.display = 'none';
+            let response = await fetch(url);
+            let result = await response.json();
+
+            if (response.ok) {
+                document.getElementById('textoEstatistica').innerText = result.texto;
+                document.getElementById('cardResultado').style.display = 'block';
+            } else {
+                alert("Erro: " + result.error);
+            }
+        } catch (err) {
+            alert("Erro de conexão com o servidor.");
+        }
+    }
+
+    function copiarTexto() {
+        const texto = document.getElementById('textoEstatistica').innerText;
+        navigator.clipboard.writeText(texto).then(() => {
+            alert("Texto copiado para a área de transferência!");
+        });
+    }
+
+    function abrirWhatsAppEstatistica() {
+        const texto = document.getElementById('textoEstatistica').innerText;
+        const url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(texto);
+        window.open(url, '_blank');
+    }
+</script>
+{% endblock %}

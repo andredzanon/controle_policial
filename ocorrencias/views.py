@@ -274,3 +274,129 @@ def api_obter_texto_relatorio(request, pk):
         return JsonResponse({'error': 'Relatório não encontrado.'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+from django.db.models import Sum, Count
+
+@login_required
+def estatisticas_view(request):
+    return render(request, 'ocorrencias/estatisticas.html')
+
+@login_required
+def api_estatisticas(request):
+    tipo_filtro = request.GET.get('tipo', 'dia')
+    
+    if tipo_filtro == 'dia':
+        data = request.GET.get('data')
+        if not data:
+            return JsonResponse({'error': 'Data não fornecida.'}, status=400)
+        turnos = RelatorioTurno.objects.filter(data=data)
+        periodo_texto = f"Data: {datetime.strptime(data, '%Y-%m-%d').strftime('%d/%m/%Y')}"
+    else:
+        data_inicio = request.GET.get('data_inicio')
+        data_fim = request.GET.get('data_fim')
+        if not data_inicio or not data_fim:
+            return JsonResponse({'error': 'Datas não fornecidas.'}, status=400)
+        turnos = RelatorioTurno.objects.filter(data__range=[data_inicio, data_fim])
+        periodo_texto = f"Período: {datetime.strptime(data_inicio, '%Y-%m-%d').strftime('%d/%m/%Y')} a {datetime.strptime(data_fim, '%Y-%m-%d').strftime('%d/%m/%Y')}"
+
+    if not turnos.exists():
+        return JsonResponse({'texto': '*NENHUM REGISTRO ENCONTRADO NESSE PERÍODO*'})
+
+    linhas = []
+    linhas.append("*RELATÓRIO ESTATÍSTICO CONSOLIDADO*")
+    linhas.append(periodo_texto)
+    linhas.append(f"Total de Turnos/Viaturas: {turnos.count()}")
+    linhas.append("")
+
+    # Dinheiro
+    total_dinheiro = turnos.aggregate(Sum('dinheiro_apreendido'))['dinheiro_apreendido__sum'] or 0
+    if total_dinheiro > 0:
+        linhas.append(f"*DINHEIRO APREENDIDO:* R$ {float(total_dinheiro):.2f}".replace('.', ','))
+        linhas.append("")
+
+    # Veículos Abordados
+    veiculos = VeiculoAbordado.objects.filter(turno__in=turnos).values('tipo').annotate(total=Sum('quantidade')).order_by('-total')
+    if veiculos:
+        total = sum(v['total'] for v in veiculos)
+        linhas.append(f"*VEÍCULOS ABORDADOS: {total}*")
+        for v in veiculos:
+            linhas.append(f"- {v['total']} {v['tipo'].capitalize()}")
+        linhas.append("")
+
+    # Pessoas Abordadas
+    pessoas = PessoaAbordada.objects.filter(turno__in=turnos).values('tipo').annotate(total=Sum('quantidade')).order_by('-total')
+    if pessoas:
+        total = sum(p['total'] for p in pessoas)
+        linhas.append(f"*PESSOAS ABORDADAS: {total}*")
+        for p in pessoas:
+            tipo_display = p['tipo'].capitalize()
+            linhas.append(f"- {p['total']} {tipo_display}")
+        linhas.append("")
+
+    # Veículos Recolhidos
+    from .models import VeiculoRecolhido
+    recolhidos = VeiculoRecolhido.objects.filter(turno__in=turnos).values('tipo', 'destino').annotate(total=Sum('quantidade')).order_by('-total')
+    if recolhidos:
+        total = sum(r['total'] for r in recolhidos)
+        linhas.append(f"*VEÍCULOS RECOLHIDOS/RECUPERADOS: {total}*")
+        for r in recolhidos:
+            linhas.append(f"- {r['total']} {r['tipo']} ({r['destino'].replace('_', ' ').title()})")
+        linhas.append("")
+
+    # Etilométrico
+    testes = TesteEtilometrico.objects.filter(turno__in=turnos).aggregate(total_realizados=Sum('realizados'), total_recusas=Sum('recusas'))
+    t_realizados = testes['total_realizados'] or 0
+    t_recusas = testes['total_recusas'] or 0
+    if t_realizados > 0 or t_recusas > 0:
+        linhas.append(f"*TESTE ETILOMÉTRICO: {t_realizados + t_recusas}*")
+        if t_realizados > 0: linhas.append(f"- {t_realizados} Realizados")
+        if t_recusas > 0: linhas.append(f"- {t_recusas} Recusas")
+        linhas.append("")
+
+    # Prisões (Somente Quantidade por sexo)
+    prisoes = PrisaoApreensao.objects.filter(turno__in=turnos).values('sexo').annotate(total=Count('id')).order_by('sexo')
+    if prisoes:
+        total = sum(p['total'] for p in prisoes)
+        linhas.append(f"*PRISÕES EFETUADAS: {total}*")
+        for p in prisoes:
+            sexo_texto = "Masculinos" if p['sexo'] == 'masculino' else "Femininas"
+            linhas.append(f"- {p['total']} Indivíduos ({sexo_texto})")
+        linhas.append("")
+        
+    # Drogas
+    drogas = ApreensaoDroga.objects.filter(turno__in=turnos).values('tipo', 'medida').annotate(total=Sum('quantidade')).order_by('tipo')
+    if drogas:
+        linhas.append("*DROGAS APREENDIDAS:*")
+        for d in drogas:
+            linhas.append(f"- {d['total']}{d['medida']} de {d['tipo']}")
+        linhas.append("")
+
+    # Objetos
+    from .models import ObjetoApreendido
+    objetos = ObjetoApreendido.objects.filter(turno__in=turnos).values('descricao').annotate(total=Sum('quantidade')).order_by('descricao')
+    if objetos:
+        total = sum(o['total'] for o in objetos)
+        linhas.append(f"*OBJETOS APREENDIDOS: {total}*")
+        for o in objetos:
+            linhas.append(f"- {o['total']}x {o['descricao']}")
+        linhas.append("")
+
+    # Notificacoes
+    from .models import Notificacao
+    notificacoes = Notificacao.objects.filter(turno__in=turnos).values('artigo', 'tipo').annotate(total=Sum('quantidade')).order_by('-total')
+    if notificacoes:
+        total = sum(n['total'] for n in notificacoes)
+        linhas.append(f"*NOTIFICAÇÕES DE TRÂNSITO: {total}*")
+        for n in notificacoes:
+            linhas.append(f"- {n['total']}x Art. {n['artigo']} ({n['tipo'].title()})")
+        linhas.append("")
+
+    # BOU (Apenas quantidade)
+    from .models import RegistroBOU
+    bous = RegistroBOU.objects.filter(turno__in=turnos).count()
+    if bous > 0:
+        linhas.append(f"*BOLETINS DE OCORRÊNCIA (BOU) FEITOS: {bous}*")
+        linhas.append("")
+
+    texto_final = "\n".join(linhas).strip()
+    return JsonResponse({'texto': texto_final})
