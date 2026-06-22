@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.db import transaction
 from datetime import datetime
-from frota.models import Viatura
+from frota.models import Viatura, AberturaTurnoViatura
 from .models import (
     RelatorioTurno, VeiculoAbordado, PessoaAbordada, 
     TesteEtilometrico, PrisaoApreensao, ApreensaoDroga
@@ -13,9 +13,8 @@ from .models import (
 
 @login_required
 def index(request):
-    viaturas = Viatura.objects.all().order_by('prefixo')
     edit_id = request.GET.get('edit', '')
-    return render(request, 'ocorrencias/index.html', {'viaturas': viaturas, 'edit_id': edit_id})
+    return render(request, 'ocorrencias/index.html', {'edit_id': edit_id})
 
 @login_required
 @require_POST
@@ -188,6 +187,18 @@ def api_salvar_relatorio(request):
             for d in data.get('drogas', []):
                 ApreensaoDroga.objects.create(turno=turno, tipo=d[0], quantidade=float(d[1]), medida=d[2])
 
+            km_final = data.get('km_final')
+            if km_final:
+                try:
+                    abertura = AberturaTurnoViatura.objects.get(data=data_str, viatura=viatura)
+                    abertura.km_final = int(km_final)
+                    abertura.save()
+                    if int(km_final) > viatura.km_atual:
+                        viatura.km_atual = int(km_final)
+                        viatura.save()
+                except AberturaTurnoViatura.DoesNotExist:
+                    pass
+
         return JsonResponse({'status': 'sucesso', 'message': 'Relatório salvo com sucesso!'})
 
     except Exception as e:
@@ -310,11 +321,40 @@ def api_obter_texto_relatorio(request, pk):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+from django.views.decorators.http import require_GET
+
+@login_required
+@require_GET
+def api_viaturas_por_data(request):
+    data_str = request.GET.get('data')
+    if not data_str:
+        return JsonResponse({'error': 'Data não fornecida.'}, status=400)
+        
+    aberturas = AberturaTurnoViatura.objects.filter(data=data_str).select_related('viatura')
+    dados = []
+    for a in aberturas:
+        dados.append({
+            'prefixo': a.viatura.prefixo,
+            'modelo': a.viatura.modelo,
+            'km_inicial': a.km_inicial
+        })
+        
+    return JsonResponse({'viaturas': dados})
+
 @login_required
 def api_obter_dados_relatorio_json(request, pk):
     try:
         turno = RelatorioTurno.objects.get(pk=pk)
         
+        km_inicial = ''
+        km_final = ''
+        try:
+            abertura = AberturaTurnoViatura.objects.get(data=turno.data, viatura=turno.viatura)
+            km_inicial = abertura.km_inicial
+            km_final = abertura.km_final or ''
+        except AberturaTurnoViatura.DoesNotExist:
+            pass
+
         payload = {
             'id': turno.pk,
             'data': turno.data.strftime('%Y-%m-%d'),
@@ -322,6 +362,8 @@ def api_obter_dados_relatorio_json(request, pk):
             'comandante': turno.comandante,
             'observacoes': turno.observacoes or '',
             'dinheiro_apreendido': float(turno.dinheiro_apreendido),
+            'km_inicial': km_inicial,
+            'km_final': km_final,
             'stats': {
                 'veiculos_abordados': [],
                 'pessoas_abordadas': [],

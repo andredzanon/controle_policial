@@ -52,3 +52,17 @@ class RegistroQuilometragem(models.Model):
     km_final = models.IntegerField(null=True, blank=True)
     data_saida = models.DateTimeField(default=timezone.now)
     data_retorno = models.DateTimeField(null=True, blank=True)
+
+class AberturaTurnoViatura(models.Model):
+    data = models.DateField(default=timezone.now)
+    viatura = models.ForeignKey(Viatura, on_delete=models.CASCADE, related_name='turnos_abertos')
+    km_inicial = models.IntegerField()
+    km_final = models.IntegerField(null=True, blank=True)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('data', 'viatura')
+
+    def __str__(self):
+        return f"{self.data.strftime('%d/%m/%Y')} - {self.viatura.prefixo}"

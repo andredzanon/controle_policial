@@ -33,16 +33,24 @@
                         </div>
                         <div class="col-md-4">
                             <label for="viatura" class="form-label">Viatura *</label>
-                            <select class="form-select" id="viatura" required>
+                            <select class="form-select" id="viatura" required onchange="atualizarKmInicial()">
                                 <option value="" disabled selected>Selecione a Viatura</option>
-                                {% for v in viaturas %}
-                                    <option value="{{ v.prefixo }}">{{ v.prefixo }} - {{ v.modelo }}</option>
-                                {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-4">
                             <label for="comandante" class="form-label">Comandante / Equipe *</label>
                             <input type="text" class="form-control" id="comandante" placeholder="Nome do Cmt" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label for="km_inicial" class="form-label">KM Inicial</label>
+                            <input type="number" class="form-control bg-light" id="km_inicial" readonly placeholder="Do turno">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="km_final" class="form-label">KM Final *</label>
+                            <input type="number" class="form-control" id="km_final" required min="0" placeholder="Fim do turno">
                         </div>
                     </div>
 
@@ -275,6 +283,59 @@ let editId = "{{ edit_id }}";
 // Auto-set today's date
 document.getElementById('data').valueAsDate = new Date();
 
+async function carregarViaturasPorData(dataSelecionada, viaturaEdit = null, kmEdit = null, kmFinalEdit = null) {
+    let select = document.getElementById('viatura');
+    select.innerHTML = '<option value="" disabled selected>Carregando...</option>';
+    document.getElementById('km_inicial').value = '';
+
+    try {
+        let res = await fetch(`{% url 'ocorrencias:api_viaturas_por_data' %}?data=${dataSelecionada}`);
+        let data = await res.json();
+        
+        select.innerHTML = '<option value="" disabled selected>Selecione a Viatura</option>';
+        if(data.viaturas && data.viaturas.length > 0) {
+            data.viaturas.forEach(v => {
+                let opt = document.createElement('option');
+                opt.value = v.prefixo;
+                opt.text = `${v.prefixo} - ${v.modelo}`;
+                opt.setAttribute('data-km', v.km_inicial);
+                select.appendChild(opt);
+            });
+        }
+        
+        if(viaturaEdit) {
+            let existe = Array.from(select.options).some(o => o.value === viaturaEdit);
+            if(!existe) {
+                let opt = document.createElement('option');
+                opt.value = viaturaEdit;
+                opt.text = `${viaturaEdit} (Anterior)`;
+                opt.setAttribute('data-km', kmEdit || '');
+                select.appendChild(opt);
+            }
+            select.value = viaturaEdit;
+            document.getElementById('km_inicial').value = kmEdit || select.options[select.selectedIndex]?.getAttribute('data-km') || '';
+            document.getElementById('km_final').value = kmFinalEdit || '';
+        }
+    } catch(e) {
+        select.innerHTML = '<option value="" disabled selected>Erro ao carregar</option>';
+    }
+}
+
+document.getElementById('data').addEventListener('change', function() {
+    carregarViaturasPorData(this.value);
+});
+
+function atualizarKmInicial() {
+    let select = document.getElementById('viatura');
+    let km = select.options[select.selectedIndex]?.getAttribute('data-km');
+    document.getElementById('km_inicial').value = km || '';
+}
+
+// Initial load if not editing
+if (!editId) {
+    carregarViaturasPorData(document.getElementById('data').value);
+}
+
 // Sum logic for vehicles -> drivers
 function updateCondutoresSum() {
     let sum = 0;
@@ -360,7 +421,8 @@ function getPayload() {
         drogas: dynamicLists['listaDrogas'],
         outros_veiculos: dynamicLists['listaOutrosVeiculos'],
         observacoes: document.getElementById('observacoes').value,
-        dinheiro_apreendido: parseFloat(document.getElementById('inputDinheiro').value) || 0
+        dinheiro_apreendido: parseFloat(document.getElementById('inputDinheiro').value) || 0,
+        km_final: document.getElementById('km_final').value ? parseInt(document.getElementById('km_final').value) : null
     };
 
     if (editId) {
@@ -482,10 +544,11 @@ async function carregarDadosEdicao() {
         let p = await res.json();
         
         document.getElementById('data').value = p.data;
-        document.getElementById('viatura').value = p.viatura;
         document.getElementById('comandante').value = p.comandante;
         document.getElementById('observacoes').value = p.observacoes;
         document.getElementById('inputDinheiro').value = p.dinheiro_apreendido || '';
+        
+        await carregarViaturasPorData(p.data, p.viatura, p.km_inicial, p.km_final);
         
         // Populate static stats inputs
         let allInputs = document.querySelectorAll('.stat-input');

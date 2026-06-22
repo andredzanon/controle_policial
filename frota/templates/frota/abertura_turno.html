@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Abertura de Turno - SJP Police System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h3 class="mb-0">Abertura de Turno - Frota</h3>
+        <a href="{% url 'frota:dashboard' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Voltar</a>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row align-items-end">
+            <div class="col-md-3">
+                <label for="dataFiltro" class="form-label fw-bold">Data do Turno</label>
+                <input type="date" id="dataFiltro" class="form-control" onchange="carregarViaturas()">
+            </div>
+            <div class="col-md-9 text-end">
+                <button type="button" class="btn btn-primary" id="btnSalvar" onclick="salvarTurno()">
+                    <i class="bi bi-cloud-arrow-up"></i> Salvar Abertura de Turno
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-body-tertiary">
+        <h5 class="card-title mb-0">Viaturas Operantes</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0 align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="text-center" style="width: 50px;">Ativar</th>
+                        <th>Prefixo</th>
+                        <th>Modelo</th>
+                        <th>Placa</th>
+                        <th style="width: 200px;">KM Inicial</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaViaturas">
+                    <tr><td colspan="5" class="text-center py-4">Selecione uma data para carregar.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let viaturasAtuais = [];
+
+document.getElementById('dataFiltro').valueAsDate = new Date();
+carregarViaturas();
+
+async function carregarViaturas() {
+    let data = document.getElementById('dataFiltro').value;
+    if(!data) return;
+
+    let tbody = document.getElementById('tabelaViaturas');
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span> Carregando...</td></tr>';
+    
+    try {
+        let res = await fetch(`{% url 'frota:api_viaturas_operantes' %}?data=${data}`);
+        let p = await res.json();
+        
+        if(!res.ok) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">Erro: ${p.error}</td></tr>`;
+            return;
+        }
+
+        viaturasAtuais = p.viaturas;
+        
+        if(viaturasAtuais.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4">Nenhuma viatura operante no momento.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = '';
+        viaturasAtuais.forEach(v => {
+            let checked = v.selecionado ? 'checked' : '';
+            tbody.innerHTML += `
+                <tr>
+                    <td class="text-center">
+                        <div class="form-check d-flex justify-content-center">
+                            <input class="form-check-input chk-viatura" type="checkbox" id="chk_${v.id}" value="${v.id}" ${checked} onchange="toggleRow(${v.id})">
+                        </div>
+                    </td>
+                    <td class="fw-bold">${v.prefixo}</td>
+                    <td>${v.modelo}</td>
+                    <td>${v.placa}</td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm km-input" id="km_${v.id}" value="${v.km_atual}" min="0" ${!v.selecionado ? 'disabled' : ''}>
+                    </td>
+                </tr>
+            `;
+        });
+    } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">Erro de conexão.</td></tr>';
+    }
+}
+
+function toggleRow(id) {
+    let chk = document.getElementById(`chk_${id}`);
+    let kmInput = document.getElementById(`km_${id}`);
+    kmInput.disabled = !chk.checked;
+}
+
+async function salvarTurno() {
+    let data = document.getElementById('dataFiltro').value;
+    if(!data) { alert("Selecione uma data."); return; }
+
+    let payload = {
+        data: data,
+        viaturas: []
+    };
+
+    viaturasAtuais.forEach(v => {
+        let chk = document.getElementById(`chk_${v.id}`);
+        let kmInput = document.getElementById(`km_${v.id}`);
+        payload.viaturas.push({
+            id: v.id,
+            km_inicial: parseInt(kmInput.value) || 0,
+            selecionado: chk.checked
+        });
+    });
+
+    let btn = document.getElementById('btnSalvar');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Salvando...';
+    btn.disabled = true;
+
+    try {
+        let res = await fetch("{% url 'frota:api_salvar_abertura_turno' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(payload)
+        });
+        let result = await res.json();
+        
+        if(res.ok) {
+            alert(result.message);
+        } else {
+            alert("Erro: " + result.error);
+        }
+    } catch(e) {
+        alert("Erro de conexão.");
+    } finally {
+        btn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i> Salvar Abertura de Turno';
+        btn.disabled = false;
+    }
+}
+</script>
+{% endblock %}

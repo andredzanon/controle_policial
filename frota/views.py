@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST, require_GET
 from django.utils import timezone
-from .models import Viatura, HistoricoManutencao
+from .models import Viatura, HistoricoManutencao, AberturaTurnoViatura
 
 @login_required
 def dashboard(request):
@@ -136,3 +136,81 @@ def api_historico_manutencao(request, viatura_id):
             'observacoes': h.observacoes
         })
     return JsonResponse({'historico': data})
+
+@login_required
+def abertura_turno_view(request):
+    return render(request, 'frota/abertura_turno.html')
+
+@login_required
+@require_GET
+def api_viaturas_operantes(request):
+    data_str = request.GET.get('data')
+    if not data_str:
+        return JsonResponse({'error': 'Data não fornecida.'}, status=400)
+    
+    viaturas_ativas = Viatura.objects.filter(status__in=[Viatura.StatusViatura.OPERANTE, Viatura.StatusViatura.BAIXADA_RODANDO]).order_by('prefixo')
+    aberturas = AberturaTurnoViatura.objects.filter(data=data_str)
+    
+    abertura_dict = {a.viatura_id: a for a in aberturas}
+    
+    dados = []
+    for v in viaturas_ativas:
+        abertura = abertura_dict.get(v.id)
+        if abertura:
+            km = abertura.km_inicial
+            selecionado = True
+        else:
+            km = v.km_atual
+            selecionado = False if aberturas.exists() else True # Se já tem turno aberto, desmarca as que não estão lá.
+            
+        dados.append({
+            'id': v.id,
+            'prefixo': v.prefixo,
+            'placa': v.placa,
+            'modelo': v.modelo,
+            'km_atual': km,
+            'selecionado': selecionado
+        })
+        
+    return JsonResponse({'viaturas': dados})
+
+from django.db import transaction
+
+@login_required
+@require_POST
+def api_salvar_abertura_turno(request):
+    try:
+        payload = json.loads(request.body)
+        data_str = payload.get('data')
+        viaturas_dados = payload.get('viaturas', [])
+        
+        if not data_str:
+            return JsonResponse({'error': 'Data não fornecida.'}, status=400)
+            
+        with transaction.atomic():
+            for v_data in viaturas_dados:
+                v_id = v_data.get('id')
+                km_inicial = int(v_data.get('km_inicial', 0))
+                selecionado = v_data.get('selecionado', False)
+                
+                v = Viatura.objects.get(pk=v_id)
+                
+                if selecionado:
+                    abertura, created = AberturaTurnoViatura.objects.get_or_create(
+                        data=data_str,
+                        viatura=v,
+                        defaults={'km_inicial': km_inicial, 'usuario': request.user}
+                    )
+                    if not created:
+                        abertura.km_inicial = km_inicial
+                        abertura.save()
+                        
+                    if km_inicial > v.km_atual:
+                        v.km_atual = km_inicial
+                        v.save()
+                else:
+                    AberturaTurnoViatura.objects.filter(data=data_str, viatura=v).delete()
+                    
+        return JsonResponse({'status': 'sucesso', 'message': 'Turno aberto com sucesso.'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

@@ -8,6 +8,7 @@
         <h3 class="mb-0">Controle da Frota e Manutenção</h3>
         <div class="btn-group">
             <button class="btn btn-primary" onclick="abrirModalViatura()"><i class="bi bi-car-front"></i> Cadastrar Nova Viatura</button>
+            <a href="{% url 'frota:abertura_turno' %}" class="btn btn-outline-primary"><i class="bi bi-clock-history"></i> Abrir Turno</a>
             <button class="btn btn-outline-secondary">Relatórios</button>
         </div>
     </div>
