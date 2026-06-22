@@ -144,35 +144,40 @@ def abertura_turno_view(request):
 @login_required
 @require_GET
 def api_viaturas_operantes(request):
-    data_str = request.GET.get('data')
-    if not data_str:
-        return JsonResponse({'error': 'Data não fornecida.'}, status=400)
-    
-    viaturas_ativas = Viatura.objects.filter(status__in=[Viatura.StatusViatura.OPERANTE, Viatura.StatusViatura.BAIXADA_RODANDO]).order_by('prefixo')
-    aberturas = AberturaTurnoViatura.objects.filter(data=data_str)
-    
-    abertura_dict = {a.viatura_id: a for a in aberturas}
-    
-    dados = []
-    for v in viaturas_ativas:
-        abertura = abertura_dict.get(v.id)
-        if abertura:
-            km = abertura.km_inicial
-            selecionado = True
-        else:
-            km = v.km_atual
-            selecionado = False if aberturas.exists() else True # Se já tem turno aberto, desmarca as que não estão lá.
-            
-        dados.append({
-            'id': v.id,
-            'prefixo': v.prefixo,
-            'placa': v.placa,
-            'modelo': v.modelo,
-            'km_atual': km,
-            'selecionado': selecionado
-        })
+    try:
+        data_str = request.GET.get('data')
+        if not data_str:
+            return JsonResponse({'error': 'Data não fornecida.'}, status=400)
         
-    return JsonResponse({'viaturas': dados})
+        viaturas_ativas = Viatura.objects.filter(status__in=[Viatura.StatusViatura.OPERANTE, Viatura.StatusViatura.BAIXADA_RODANDO]).order_by('prefixo')
+        aberturas = AberturaTurnoViatura.objects.filter(data=data_str)
+        
+        abertura_dict = {a.viatura_id: a for a in aberturas}
+        
+        dados = []
+        for v in viaturas_ativas:
+            abertura = abertura_dict.get(v.id)
+            if abertura:
+                km = abertura.km_inicial
+                selecionado = True
+            else:
+                km = v.km_atual
+                selecionado = False if aberturas.exists() else True # Se já tem turno aberto, desmarca as que não estão lá.
+                
+            dados.append({
+                'id': v.id,
+                'prefixo': v.prefixo,
+                'placa': v.placa,
+                'modelo': v.modelo,
+                'km_atual': km,
+                'selecionado': selecionado
+            })
+            
+        return JsonResponse({'viaturas': dados})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': str(e)}, status=500)
 
 from django.db import transaction
 
