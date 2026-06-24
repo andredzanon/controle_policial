@@ -32,14 +32,14 @@
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-striped table-hover mb-0 align-middle">
+            <table class="table mb-0 align-middle">
                 <thead class="table-dark">
                     <tr>
-                        <th class="text-center" style="width: 50px;">Ativar</th>
                         <th>Prefixo</th>
                         <th>Modelo</th>
                         <th>Placa</th>
                         <th style="width: 200px;">KM Inicial</th>
+                        <th class="text-center" style="width: 100px;">Ativar</th>
                     </tr>
                 </thead>
                 <tbody id="tabelaViaturas">
@@ -85,18 +85,19 @@ async function carregarViaturas() {
         tbody.innerHTML = '';
         viaturasAtuais.forEach(v => {
             let checked = v.selecionado ? 'checked' : '';
+            let rowClass = v.selecionado ? 'table-success' : 'table-danger';
             tbody.innerHTML += `
-                <tr>
-                    <td class="text-center">
-                        <div class="form-check d-flex justify-content-center">
-                            <input class="form-check-input chk-viatura" type="checkbox" id="chk_${v.id}" value="${v.id}" ${checked} onchange="toggleRow(${v.id})">
-                        </div>
-                    </td>
+                <tr id="row_${v.id}" class="${rowClass}">
                     <td class="fw-bold">${v.prefixo}</td>
                     <td>${v.modelo}</td>
                     <td>${v.placa}</td>
                     <td>
                         <input type="number" class="form-control form-control-sm km-input" id="km_${v.id}" value="${v.km_atual}" min="0" ${!v.selecionado ? 'disabled' : ''}>
+                    </td>
+                    <td class="text-center">
+                        <div class="form-check d-flex justify-content-center">
+                            <input class="form-check-input chk-viatura" type="checkbox" id="chk_${v.id}" value="${v.id}" ${checked} onchange="toggleRow(${v.id})">
+                        </div>
                     </td>
                 </tr>
             `;
@@ -109,7 +110,17 @@ async function carregarViaturas() {
 function toggleRow(id) {
     let chk = document.getElementById(`chk_${id}`);
     let kmInput = document.getElementById(`km_${id}`);
+    let row = document.getElementById(`row_${id}`);
+    
     kmInput.disabled = !chk.checked;
+    
+    if (chk.checked) {
+        row.classList.remove('table-danger');
+        row.classList.add('table-success');
+    } else {
+        row.classList.remove('table-success');
+        row.classList.add('table-danger');
+    }
 }
 
 async function salvarTurno() {
