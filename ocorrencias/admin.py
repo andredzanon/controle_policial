@@ -22,6 +22,10 @@ class ApreensaoDrogaInline(admin.TabularInline):
 
 class TesteEtilometricoInline(admin.StackedInline):
     model = TesteEtilometrico
+
+class VeiculoRecolhidoInline(admin.TabularInline):
+    model = VeiculoRecolhido
+    extra = 0
     
 @admin.register(RelatorioTurno)
 class RelatorioTurnoAdmin(admin.ModelAdmin):
@@ -32,6 +36,7 @@ class RelatorioTurnoAdmin(admin.ModelAdmin):
         TesteEtilometricoInline,
         VeiculoAbordadoInline, 
         PessoaAbordadaInline, 
+        VeiculoRecolhidoInline,
         PrisaoApreensaoInline, 
         ApreensaoDrogaInline
     ]

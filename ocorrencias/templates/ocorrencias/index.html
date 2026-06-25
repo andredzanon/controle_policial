@@ -219,6 +219,88 @@
                             </div>
                         </div>
 
+                        <!-- Veículos Recolhidos -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseVeiculosRecolhidos">
+                                    Veículos Recolhidos
+                                </button>
+                            </h2>
+                            <div id="collapseVeiculosRecolhidos" class="accordion-collapse collapse" data-bs-parent="#accordionSecoes">
+                                <div class="accordion-body">
+                                    <div id="listaVeiculosRecolhidos" class="mb-2"></div>
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-sm-4">
+                                            <label class="form-label small mb-1">Tipo</label>
+                                            <select class="form-select" id="inputVeiculoRecolhidoTipo">
+                                                <option value="Automóvel">Automóvel</option>
+                                                <option value="Motocicleta">Motocicleta</option>
+                                                <option value="Bicicleta motorizada">Bicicleta motorizada</option>
+                                                <option value="Caminhão">Caminhão</option>
+                                                <option value="Ônibus">Ônibus</option>
+                                                <option value="Outros">Outros</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-sm-3">
+                                            <label class="form-label small mb-1">Qtd</label>
+                                            <input type="number" class="form-control" id="inputVeiculoRecolhidoQtd" placeholder="Qtd" min="1" value="1">
+                                        </div>
+                                        <div class="col-sm-3">
+                                            <label class="form-label small mb-1">Recolhimento</label>
+                                            <select class="form-select" id="inputVeiculoRecolhidoDestino">
+                                                <option value="Pátio da CIA PM">Pátio da CIA PM</option>
+                                                <option value="Delegacia">Delegacia</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-sm-2">
+                                            <button type="button" class="btn btn-outline-success w-100" onclick="addListRow('listaVeiculosRecolhidos', 'Veículo Recolhido', ['inputVeiculoRecolhidoTipo', 'inputVeiculoRecolhidoQtd', 'inputVeiculoRecolhidoDestino'])"><i class="bi bi-plus"></i> Add</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Veículos Recuperados -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseVeiculosRecuperados">
+                                    Veículos Recuperados
+                                </button>
+                            </h2>
+                            <div id="collapseVeiculosRecuperados" class="accordion-collapse collapse" data-bs-parent="#accordionSecoes">
+                                <div class="accordion-body">
+                                    <div id="listaVeiculosRecuperados" class="mb-2"></div>
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-sm-4">
+                                            <label class="form-label small mb-1">Tipo</label>
+                                            <select class="form-select" id="inputVeiculoRecuperadoTipo">
+                                                <option value="Automóvel">Automóvel</option>
+                                                <option value="Motocicleta">Motocicleta</option>
+                                                <option value="Bicicleta motorizada">Bicicleta motorizada</option>
+                                                <option value="Caminhão">Caminhão</option>
+                                                <option value="Ônibus">Ônibus</option>
+                                                <option value="Outros">Outros</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-sm-3">
+                                            <label class="form-label small mb-1">Qtd</label>
+                                            <input type="number" class="form-control" id="inputVeiculoRecuperadoQtd" placeholder="Qtd" min="1" value="1">
+                                        </div>
+                                        <div class="col-sm-3">
+                                            <label class="form-label small mb-1">Recolhimento</label>
+                                            <select class="form-select" id="inputVeiculoRecuperadoDestino">
+                                                <option value="Pátio da CIA PM">Pátio da CIA PM</option>
+                                                <option value="Delegacia">Delegacia</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-sm-2">
+                                            <button type="button" class="btn btn-outline-success w-100" onclick="addListRow('listaVeiculosRecuperados', 'Veículo Recuperado', ['inputVeiculoRecuperadoTipo', 'inputVeiculoRecuperadoQtd', 'inputVeiculoRecuperadoDestino'])"><i class="bi bi-plus"></i> Add</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Observações -->
                         <div class="accordion-item">
                             <h2 class="accordion-header">
@@ -275,7 +357,9 @@
 let dynamicLists = {
     'listaPrisoes': [],
     'listaDrogas': [],
-    'listaOutrosVeiculos': []
+    'listaOutrosVeiculos': [],
+    'listaVeiculosRecolhidos': [],
+    'listaVeiculosRecuperados': []
 };
 
 let editId = "{{ edit_id }}";
@@ -402,7 +486,7 @@ function renderList(listId, type, triggerSumUpdate = false) {
 function resetForm() {
     document.getElementById('formOcorrencias').reset();
     document.getElementById('data').valueAsDate = new Date();
-    ['listaPrisoes', 'listaDrogas', 'listaOutrosVeiculos'].forEach(list => {
+    ['listaPrisoes', 'listaDrogas', 'listaOutrosVeiculos', 'listaVeiculosRecolhidos', 'listaVeiculosRecuperados'].forEach(list => {
         dynamicLists[list] = [];
         document.getElementById(list).innerHTML = '';
     });
@@ -420,6 +504,8 @@ function getPayload() {
         prisoes: dynamicLists['listaPrisoes'],
         drogas: dynamicLists['listaDrogas'],
         outros_veiculos: dynamicLists['listaOutrosVeiculos'],
+        veiculos_recolhidos: dynamicLists['listaVeiculosRecolhidos'],
+        veiculos_recuperados: dynamicLists['listaVeiculosRecuperados'],
         observacoes: document.getElementById('observacoes').value,
         dinheiro_apreendido: parseFloat(document.getElementById('inputDinheiro').value) || 0,
         km_final: document.getElementById('km_final').value ? parseInt(document.getElementById('km_final').value) : null
@@ -571,6 +657,12 @@ async function carregarDadosEdicao() {
         
         dynamicLists['listaOutrosVeiculos'] = p.outros_veiculos;
         renderList('listaOutrosVeiculos', 'Outro Veículo', true);
+
+        dynamicLists['listaVeiculosRecolhidos'] = p.veiculos_recolhidos || [];
+        renderList('listaVeiculosRecolhidos', 'Veículo Recolhido');
+
+        dynamicLists['listaVeiculosRecuperados'] = p.veiculos_recuperados || [];
+        renderList('listaVeiculosRecuperados', 'Veículo Recuperado');
         
         updateCondutoresSum();
         

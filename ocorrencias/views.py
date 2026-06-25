@@ -7,7 +7,7 @@ from django.db import transaction
 from datetime import datetime
 from frota.models import Viatura, AberturaTurnoViatura
 from .models import (
-    RelatorioTurno, VeiculoAbordado, PessoaAbordada, 
+    RelatorioTurno, VeiculoAbordado, PessoaAbordada, VeiculoRecolhido,
     TesteEtilometrico, PrisaoApreensao, ApreensaoDroga
 )
 
@@ -92,6 +92,24 @@ def api_gerar_relatorio(request):
                 linhas.append(f"- {item[1]}{item[2]} de {item[0]}")
             linhas.append("")
 
+        # Veículos Recolhidos
+        veiculos_recolhidos = data.get('veiculos_recolhidos', [])
+        if veiculos_recolhidos:
+            total_rec = sum(int(item[1]) for item in veiculos_recolhidos)
+            linhas.append(f"*VEÍCULOS RECOLHIDOS: {total_rec}*")
+            for item in veiculos_recolhidos:
+                linhas.append(f"- {item[1]} {item[0]} ({item[2]})")
+            linhas.append("")
+
+        # Veículos Recuperados
+        veiculos_recuperados = data.get('veiculos_recuperados', [])
+        if veiculos_recuperados:
+            total_recup = sum(int(item[1]) for item in veiculos_recuperados)
+            linhas.append(f"*VEÍCULOS RECUPERADOS: {total_recup}*")
+            for item in veiculos_recuperados:
+                linhas.append(f"- {item[1]} {item[0]} ({item[2]})")
+            linhas.append("")
+
         obs = data.get('observacoes', '').strip()
         if obs:
             linhas.append("*OBSERVAÇÕES:*")
@@ -144,6 +162,7 @@ def api_salvar_relatorio(request):
                     turno.teste_etilometrico.delete()
                 turno.prisoes_apreensoes.all().delete()
                 turno.drogas_apreendidas.all().delete()
+                turno.veiculos_recolhidos.all().delete()
             else:
                 turno = RelatorioTurno.objects.create(
                     data=data_str,
@@ -186,6 +205,16 @@ def api_salvar_relatorio(request):
             # Salvar drogas
             for d in data.get('drogas', []):
                 ApreensaoDroga.objects.create(turno=turno, tipo=d[0], quantidade=float(d[1]), medida=d[2])
+
+            # Salvar veículos recolhidos
+            for vr in data.get('veiculos_recolhidos', []):
+                destino = 'patio' if 'pátio' in vr[2].lower() else 'delegacia'
+                VeiculoRecolhido.objects.create(turno=turno, tipo=vr[0], quantidade=int(vr[1]), destino=destino)
+
+            # Salvar veículos recuperados
+            for vr in data.get('veiculos_recuperados', []):
+                destino = 'recuperado_patio' if 'pátio' in vr[2].lower() else 'recuperado_delegacia'
+                VeiculoRecolhido.objects.create(turno=turno, tipo=vr[0], quantidade=int(vr[1]), destino=destino)
 
             km_final = data.get('km_final')
             if km_final:
@@ -308,6 +337,26 @@ def api_obter_texto_relatorio(request, pk):
                 linhas.append(f"- {d.quantidade}{d.medida} de {d.tipo}")
             linhas.append("")
 
+        # Veículos Recolhidos
+        recolhidos = turno.veiculos_recolhidos.filter(destino__in=['patio', 'delegacia'])
+        if recolhidos.exists():
+            total = sum(r.quantidade for r in recolhidos)
+            linhas.append(f"*VEÍCULOS RECOLHIDOS: {total}*")
+            for r in recolhidos:
+                destino_str = 'Pátio da CIA PM' if r.destino == 'patio' else 'Delegacia'
+                linhas.append(f"- {r.quantidade} {r.tipo} ({destino_str})")
+            linhas.append("")
+
+        # Veículos Recuperados
+        recuperados = turno.veiculos_recolhidos.filter(destino__in=['recuperado_patio', 'recuperado_delegacia', 'recuperado_outros'])
+        if recuperados.exists():
+            total = sum(r.quantidade for r in recuperados)
+            linhas.append(f"*VEÍCULOS RECUPERADOS: {total}*")
+            for r in recuperados:
+                destino_str = 'Pátio da CIA PM' if r.destino == 'recuperado_patio' else ('Delegacia' if r.destino == 'recuperado_delegacia' else 'Outros')
+                linhas.append(f"- {r.quantidade} {r.tipo} ({destino_str})")
+            linhas.append("")
+
         if turno.observacoes:
             linhas.append("*OBSERVAÇÕES:*")
             linhas.append(turno.observacoes)
@@ -371,7 +420,9 @@ def api_obter_dados_relatorio_json(request, pk):
             },
             'outros_veiculos': [],
             'prisoes': [],
-            'drogas': []
+            'drogas': [],
+            'veiculos_recolhidos': [],
+            'veiculos_recuperados': []
         }
 
         # Veículos Abordados
@@ -404,6 +455,15 @@ def api_obter_dados_relatorio_json(request, pk):
         # Drogas
         for d in turno.drogas_apreendidas.all():
             payload['drogas'].append([d.tipo, str(float(d.quantidade)), d.medida])
+
+        # Veículos Recolhidos e Recuperados
+        for vr in turno.veiculos_recolhidos.all():
+            if vr.destino in ['patio', 'delegacia']:
+                recolhimento_label = 'Pátio da CIA PM' if vr.destino == 'patio' else 'Delegacia'
+                payload['veiculos_recolhidos'].append([vr.tipo, str(vr.quantidade), recolhimento_label])
+            elif vr.destino in ['recuperado_patio', 'recuperado_delegacia']:
+                recolhimento_label = 'Pátio da CIA PM' if vr.destino == 'recuperado_patio' else 'Delegacia'
+                payload['veiculos_recuperados'].append([vr.tipo, str(vr.quantidade), recolhimento_label])
 
         return JsonResponse(payload)
     except RelatorioTurno.DoesNotExist:
@@ -486,13 +546,23 @@ def api_estatisticas(request):
         linhas.append("")
 
     # Veículos Recolhidos
-    from .models import VeiculoRecolhido
-    recolhidos = VeiculoRecolhido.objects.filter(turno__in=turnos).values('tipo', 'destino').annotate(total=Sum('quantidade')).order_by('-total')
+    recolhidos = VeiculoRecolhido.objects.filter(turno__in=turnos, destino__in=['patio', 'delegacia']).values('tipo', 'destino').annotate(total=Sum('quantidade')).order_by('-total')
     if recolhidos:
         total = sum(r['total'] for r in recolhidos)
-        linhas.append(f"*VEÍCULOS RECOLHIDOS/RECUPERADOS: {total}*")
+        linhas.append(f"*VEÍCULOS RECOLHIDOS: {total}*")
         for r in recolhidos:
-            linhas.append(f"- {r['total']} {r['tipo']} ({r['destino'].replace('_', ' ').title()})")
+            destino_str = 'Pátio da CIA PM' if r['destino'] == 'patio' else 'Delegacia'
+            linhas.append(f"- {r['total']} {r['tipo']} ({destino_str})")
+        linhas.append("")
+
+    # Veículos Recuperados
+    recuperados = VeiculoRecolhido.objects.filter(turno__in=turnos, destino__in=['recuperado_patio', 'recuperado_delegacia', 'recuperado_outros']).values('tipo', 'destino').annotate(total=Sum('quantidade')).order_by('-total')
+    if recuperados:
+        total = sum(r['total'] for r in recuperados)
+        linhas.append(f"*VEÍCULOS RECUPERADOS: {total}*")
+        for r in recuperados:
+            destino_str = 'Pátio da CIA PM' if r['destino'] == 'recuperado_patio' else ('Delegacia' if r['destino'] == 'recuperado_delegacia' else 'Outros')
+            linhas.append(f"- {r['total']} {r['tipo']} ({destino_str})")
         linhas.append("")
 
     # Etilométrico
