@@ -24,6 +24,7 @@ def api_salvar_viatura(request):
         tipo = data.get('tipo', 'carro')
         km_atual = int(data.get('km_atual', 0))
         limite_troca_oleo = int(data.get('limite_troca_oleo', 10000))
+        status = data.get('status', 'operando')
         
         if not prefixo or not placa or not modelo:
             return JsonResponse({'error': 'Preencha prefixo, placa e modelo.'}, status=400)
@@ -40,6 +41,7 @@ def api_salvar_viatura(request):
             v.tipo = tipo
             v.km_atual = km_atual
             v.limite_troca_oleo = limite_troca_oleo
+            v.status = status
             v.save()
             msg = 'Viatura atualizada com sucesso.'
         else:
@@ -51,7 +53,8 @@ def api_salvar_viatura(request):
                 modelo=modelo,
                 tipo=tipo,
                 km_atual=km_atual,
-                limite_troca_oleo=limite_troca_oleo
+                limite_troca_oleo=limite_troca_oleo,
+                status=status
             )
             msg = 'Viatura cadastrada com sucesso.'
 
@@ -73,11 +76,11 @@ def api_enviar_manutencao(request):
             return JsonResponse({'error': 'Preencha todos os campos obrigatórios.'}, status=400)
 
         v = get_object_or_404(Viatura, pk=viatura_id)
-        if v.status == Viatura.StatusViatura.BAIXADA:
+        if v.status in [Viatura.StatusViatura.BAIXADA_OFICINA, Viatura.StatusViatura.BAIXADA_BATALHAO, 'baixada']:
             return JsonResponse({'error': 'A viatura já está baixada.'}, status=400)
 
         # Atualizar viatura
-        v.status = Viatura.StatusViatura.BAIXADA
+        v.status = Viatura.StatusViatura.BAIXADA_OFICINA
         v.motivo_baixa = motivo
         v.localizacao_atual = local
         v.save()
@@ -102,7 +105,7 @@ def api_retornar_manutencao(request):
         viatura_id = data.get('viatura_id')
 
         v = get_object_or_404(Viatura, pk=viatura_id)
-        if v.status != Viatura.StatusViatura.BAIXADA:
+        if v.status not in [Viatura.StatusViatura.BAIXADA_OFICINA, Viatura.StatusViatura.BAIXADA_BATALHAO, 'baixada']:
             return JsonResponse({'error': 'A viatura não está baixada.'}, status=400)
 
         # Atualizar histórico em aberto
@@ -113,7 +116,7 @@ def api_retornar_manutencao(request):
             historico.save()
 
         # Atualizar viatura
-        v.status = Viatura.StatusViatura.OPERANTE
+        v.status = Viatura.StatusViatura.OPERANDO
         v.motivo_baixa = ''
         v.localizacao_atual = ''
         v.save()
@@ -147,7 +150,14 @@ def abertura_turno_view(request):
 @require_GET
 def api_viaturas_operantes(request):
     try:
-        viaturas_ativas = Viatura.objects.filter(status__in=[Viatura.StatusViatura.OPERANTE, Viatura.StatusViatura.BAIXADA_RODANDO]).order_by('prefixo')
+        viaturas_ativas = Viatura.objects.filter(
+            status__in=[
+                Viatura.StatusViatura.OPERANDO,
+                Viatura.StatusViatura.VAI_BAIXAR,
+                'operante',
+                'baixada_rodando'
+            ]
+        ).order_by('prefixo')
         aberturas = AberturaTurnoViatura.objects.filter(data_encerramento__isnull=True)
         
         abertura_dict = {a.viatura_id: a for a in aberturas}

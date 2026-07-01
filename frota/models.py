@@ -4,9 +4,10 @@ from django.conf import settings
 
 class Viatura(models.Model):
     class StatusViatura(models.TextChoices):
-        OPERANTE = 'operante', 'Operante'
-        BAIXADA_RODANDO = 'baixada_rodando', 'Baixada Rodando'
-        BAIXADA = 'baixada', 'Baixada'
+        OPERANDO = 'operando', 'Operando(300)'
+        VAI_BAIXAR = 'vai_baixar', 'Vai Baixar'
+        BAIXADA_BATALHAO = 'baixada_batalhao', 'Baixada(Batalhão)'
+        BAIXADA_OFICINA = 'baixada_oficina', 'Baixada(Oficina)'
 
     class TipoViatura(models.TextChoices):
         CARRO = 'carro', 'Carro'
@@ -22,7 +23,7 @@ class Viatura(models.Model):
     status = models.CharField(
         max_length=20,
         choices=StatusViatura.choices,
-        default=StatusViatura.OPERANTE
+        default=StatusViatura.OPERANDO
     )
     km_atual = models.IntegerField(default=0)
     limite_troca_oleo = models.IntegerField(default=10000, help_text="KM limite para a próxima troca de óleo")

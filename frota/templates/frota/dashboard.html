@@ -17,14 +17,16 @@
 <div class="row g-4">
     {% for viatura in viaturas %}
     <div class="col-md-6 col-lg-4">
-        <div class="card h-100 shadow-sm border-0 {% if viatura.status == 'baixada' %}border-top border-danger border-4{% endif %}">
+        <div class="card h-100 shadow-sm border-0 {% if viatura.status == 'baixada' or viatura.status == 'baixada_oficina' or viatura.status == 'baixada_batalhao' %}border-top border-danger border-4{% endif %}">
             <div class="card-body d-flex flex-column">
                 <div class="d-flex justify-content-between mb-2">
                     <h5 class="card-title fw-bold mb-0">{{ viatura.prefixo }}</h5>
-                    {% if viatura.status == 'operante' %}
-                        <span class="badge bg-success">Operante</span>
-                    {% elif viatura.status == 'baixada_rodando' %}
-                        <span class="badge bg-warning text-dark">Baixada Rodando</span>
+                    {% if viatura.status == 'operando' or viatura.status == 'operante' %}
+                        <span class="badge bg-success">Operando(300)</span>
+                    {% elif viatura.status == 'vai_baixar' or viatura.status == 'baixada_rodando' %}
+                        <span class="badge bg-warning text-dark">Vai Baixar</span>
+                    {% elif viatura.status == 'baixada_batalhao' %}
+                        <span class="badge bg-danger">Baixada (Batalhão)</span>
                     {% else %}
                         <span class="badge bg-danger">Baixada (Oficina)</span>
                     {% endif %}
@@ -55,23 +57,23 @@
                     </div>
                 </div>
 
-                {% if viatura.status == 'baixada' %}
+                {% if viatura.status == 'baixada' or viatura.status == 'baixada_oficina' or viatura.status == 'baixada_batalhao' %}
                     <div class="alert alert-danger p-2 small mb-3">
-                        <strong>Oficina:</strong> {{ viatura.localizacao_atual }}<br>
+                        <strong>{% if viatura.status == 'baixada_batalhao' %}Batalhão{% else %}Oficina{% endif %}:</strong> {{ viatura.localizacao_atual }}<br>
                         <strong>Motivo:</strong> {{ viatura.motivo_baixa }}
                     </div>
                 {% endif %}
 
                 <div class="mt-auto pt-3 border-top">
                     <div class="d-flex justify-content-between gap-1 flex-wrap">
-                        <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalViatura({{ viatura.pk }}, '{{ viatura.prefixo }}', '{{ viatura.placa }}', '{{ viatura.marca }}', '{{ viatura.modelo }}', '{{ viatura.tipo }}', {{ viatura.km_atual }}, {{ viatura.limite_troca_oleo }}, {{ viatura.has_open_turno|yesno:"true,false" }})" title="Editar">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalViatura({{ viatura.pk }}, '{{ viatura.prefixo }}', '{{ viatura.placa }}', '{{ viatura.marca }}', '{{ viatura.modelo }}', '{{ viatura.tipo }}', {{ viatura.km_atual }}, {{ viatura.limite_troca_oleo }}, {{ viatura.has_open_turno|yesno:"true,false" }}, '{{ viatura.status }}')" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </button>
                         <button class="btn btn-sm btn-outline-info" onclick="verHistoricoManutencao({{ viatura.pk }}, '{{ viatura.prefixo }}')" title="Histórico de Manutenção">
                             <i class="bi bi-clock-history"></i> Histórico
                         </button>
                         
-                        {% if viatura.status != 'baixada' %}
+                        {% if viatura.status != 'baixada' and viatura.status != 'baixada_oficina' and viatura.status != 'baixada_batalhao' %}
                             <button class="btn btn-sm btn-warning" onclick="abrirModalManutencao({{ viatura.pk }}, '{{ viatura.prefixo }}')">
                                 <i class="bi bi-wrench"></i> Manutenção
                             </button>
@@ -123,13 +125,22 @@
                             <input type="text" class="form-control" id="v_modelo" placeholder="Ex: Duster" required>
                         </div>
                     </div>
-                    <div class="mb-3">
+                     <div class="mb-3">
                         <label class="form-label">Tipo de Veículo</label>
                         <select class="form-select" id="v_tipo" required>
                             <option value="carro">Carro</option>
                             <option value="moto">Moto</option>
                             <option value="furgao">Furgão</option>
                             <option value="outros">Outros</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Situação (Status)</label>
+                        <select class="form-select" id="v_status" required>
+                            <option value="operando">Operando(300)</option>
+                            <option value="vai_baixar">Vai Baixar</option>
+                            <option value="baixada_batalhao">Baixada(Batalhão)</option>
+                            <option value="baixada_oficina">Baixada(Oficina)</option>
                         </select>
                     </div>
                     <div class="row">
@@ -230,7 +241,7 @@ const modalViatura = new bootstrap.Modal(document.getElementById('modalViatura')
 const modalManutencao = new bootstrap.Modal(document.getElementById('modalManutencao'));
 const modalHistorico = new bootstrap.Modal(document.getElementById('modalHistorico'));
 
-function abrirModalViatura(id='', prefixo='', placa='', marca='', modelo='', tipo='carro', km_atual=0, limite_oleo=10000, has_open_turno=false) {
+function abrirModalViatura(id='', prefixo='', placa='', marca='', modelo='', tipo='carro', km_atual=0, limite_oleo=10000, has_open_turno=false, status='operando') {
     document.getElementById('v_id').value = id;
     document.getElementById('v_prefixo').value = prefixo;
     document.getElementById('v_placa').value = placa;
@@ -239,6 +250,7 @@ function abrirModalViatura(id='', prefixo='', placa='', marca='', modelo='', tip
     document.getElementById('v_tipo').value = tipo;
     document.getElementById('v_km_atual').value = km_atual;
     document.getElementById('v_limite_oleo').value = limite_oleo;
+    document.getElementById('v_status').value = status;
     
     const kmInput = document.getElementById('v_km_atual');
     const kmWarning = document.getElementById('v_km_warning');
@@ -263,7 +275,8 @@ async function salvarViatura() {
         modelo: document.getElementById('v_modelo').value,
         tipo: document.getElementById('v_tipo').value,
         km_atual: document.getElementById('v_km_atual').value,
-        limite_troca_oleo: document.getElementById('v_limite_oleo').value
+        limite_troca_oleo: document.getElementById('v_limite_oleo').value,
+        status: document.getElementById('v_status').value
     };
 
     if(!payload.prefixo || !payload.placa || !payload.modelo || !payload.marca) {
