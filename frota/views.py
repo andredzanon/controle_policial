@@ -123,32 +123,46 @@ def api_enviar_manutencao(request):
     try:
         data = json.loads(request.body)
         viatura_id = data.get('viatura_id')
-        motivo = data.get('motivo')
-        local = data.get('local')
+        motivos = data.get('motivos', [])
+        situacao = data.get('situacao')
         observacoes = data.get('observacoes', '')
 
-        if not viatura_id or not motivo or not local:
-            return JsonResponse({'error': 'Preencha todos os campos obrigatórios.'}, status=400)
+        if not viatura_id or not motivos or not situacao:
+            return JsonResponse({'error': 'Preencha todos os campos obrigatórios (situação e pelo menos um motivo).'}, status=400)
 
         v = get_object_or_404(Viatura, pk=viatura_id)
-        if v.status in [Viatura.StatusViatura.BAIXADA_OFICINA, Viatura.StatusViatura.BAIXADA_BATALHAO, 'baixada']:
-            return JsonResponse({'error': 'A viatura já está baixada.'}, status=400)
+        
+        # Check if there is an active maintenance for editing
+        m = v.manutencoes.filter(concluida=False).last()
+        
+        if m:
+            # Edit existing maintenance
+            m.motivo = json.dumps(motivos)
+            m.local = situacao
+            m.observacoes = observacoes
+            m.save()
+            msg = 'Manutenção atualizada com sucesso.'
+        else:
+            # Create new maintenance
+            # Rule: only one active maintenance at a time
+            if v.status in [Viatura.StatusViatura.BAIXADA_OFICINA, Viatura.StatusViatura.BAIXADA_BATALHAO, Viatura.StatusViatura.VAI_BAIXAR]:
+                return JsonResponse({'error': 'A viatura já possui uma manutenção em andamento.'}, status=400)
+            
+            m = HistoricoManutencao.objects.create(
+                viatura=v,
+                motivo=json.dumps(motivos),
+                local=situacao,
+                observacoes=observacoes
+            )
+            msg = 'Viatura enviada para manutenção.'
 
-        # Atualizar viatura
-        v.status = Viatura.StatusViatura.BAIXADA_OFICINA
-        v.motivo_baixa = motivo
-        v.localizacao_atual = local
+        # Update viatura status and info
+        v.status = situacao
+        v.motivo_baixa = ", ".join(motivos)
+        v.localizacao_atual = situacao
         v.save()
 
-        # Criar histórico
-        HistoricoManutencao.objects.create(
-            viatura=v,
-            motivo=motivo,
-            local=local,
-            observacoes=observacoes
-        )
-
-        return JsonResponse({'status': 'sucesso', 'message': 'Viatura enviada para manutenção.'})
+        return JsonResponse({'status': 'sucesso', 'message': msg})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -158,16 +172,19 @@ def api_retornar_manutencao(request):
     try:
         data = json.loads(request.body)
         viatura_id = data.get('viatura_id')
+        observacoes = data.get('observacoes', '')
 
         v = get_object_or_404(Viatura, pk=viatura_id)
-        if v.status not in [Viatura.StatusViatura.BAIXADA_OFICINA, Viatura.StatusViatura.BAIXADA_BATALHAO, 'baixada']:
-            return JsonResponse({'error': 'A viatura não está baixada.'}, status=400)
+        if v.status not in [Viatura.StatusViatura.BAIXADA_OFICINA, Viatura.StatusViatura.BAIXADA_BATALHAO, Viatura.StatusViatura.VAI_BAIXAR, 'baixada']:
+            return JsonResponse({'error': 'A viatura não possui manutenção ativa.'}, status=400)
 
         # Atualizar histórico em aberto
         historico = v.manutencoes.filter(concluida=False).last()
         if historico:
             historico.concluida = True
             historico.data_retorno = timezone.now()
+            if observacoes:
+                historico.observacoes = (historico.observacoes or '') + f"\n[Retorno]: {observacoes}"
             historico.save()
 
         # Atualizar viatura
@@ -187,15 +204,55 @@ def api_historico_manutencao(request, viatura_id):
     historico = v.manutencoes.all().order_by('-data_saida')
     data = []
     for h in historico:
+        # Format motives
+        motivo_display = h.motivo
+        try:
+            motivos_list = json.loads(h.motivo)
+            if isinstance(motivos_list, list):
+                motivo_display = ", ".join(motivos_list)
+        except Exception:
+            pass
+
+        # Format local/situation
+        local_display = h.local
+        if h.local == 'vai_baixar':
+            local_display = 'Vai Baixar'
+        elif h.local == 'baixada_batalhao':
+            local_display = 'Baixada (Batalhão)'
+        elif h.local == 'baixada_oficina':
+            local_display = 'Baixada (Oficina)'
+
         data.append({
             'data_saida': h.data_saida.strftime('%d/%m/%Y %H:%M'),
-            'motivo': h.motivo,
-            'local': h.local,
+            'motivo': motivo_display,
+            'local': local_display,
             'data_retorno': h.data_retorno.strftime('%d/%m/%Y %H:%M') if h.data_retorno else 'Em andamento',
             'concluida': h.concluida,
             'observacoes': h.observacoes
         })
     return JsonResponse({'historico': data})
+
+@login_required
+@require_GET
+def api_manutencao_ativa(request, viatura_id):
+    v = get_object_or_404(Viatura, pk=viatura_id)
+    m = v.manutencoes.filter(concluida=False).last()
+    if m:
+        try:
+            motivos = json.loads(m.motivo)
+            if not isinstance(motivos, list):
+                motivos = [m.motivo]
+        except Exception:
+            motivos = [m.motivo] if m.motivo else []
+            
+        return JsonResponse({
+            'exists': True,
+            'id': m.id,
+            'situacao': m.local,
+            'motivos': motivos,
+            'observacoes': m.observacoes or ''
+        })
+    return JsonResponse({'exists': False})
 
 @login_required
 def abertura_turno_view(request):

@@ -137,10 +137,10 @@
                     </div>
                 </div>
 
-                {% if viatura.status == 'baixada' or viatura.status == 'baixada_oficina' or viatura.status == 'baixada_batalhao' %}
+                {% if viatura.status == 'baixada' or viatura.status == 'baixada_oficina' or viatura.status == 'baixada_batalhao' or viatura.status == 'vai_baixar' %}
                     <div class="alert alert-danger p-2 small mb-3">
-                        <strong>{% if viatura.status == 'baixada_batalhao' %}Batalhão{% else %}Oficina{% endif %}:</strong> {{ viatura.localizacao_atual }}<br>
-                        <strong>Motivo:</strong> {{ viatura.motivo_baixa }}
+                        <strong>{% if viatura.status == 'baixada_batalhao' %}Batalhão{% elif viatura.status == 'vai_baixar' %}Vai Baixar{% else %}Oficina{% endif %}:</strong> {{ viatura.localizacao_atual }}<br>
+                        <strong>Motivo(s):</strong> {{ viatura.motivo_baixa }}
                     </div>
                 {% endif %}
 
@@ -153,13 +153,16 @@
                             <i class="bi bi-clock-history"></i> Histórico
                         </button>
                         
-                        {% if viatura.status != 'baixada' and viatura.status != 'baixada_oficina' and viatura.status != 'baixada_batalhao' %}
-                            <button class="btn btn-sm btn-warning" onclick="abrirModalManutencao({{ viatura.pk }}, '{{ viatura.prefixo }}')">
+                        {% if viatura.status == 'vai_baixar' or viatura.status == 'baixada_oficina' or viatura.status == 'baixada_batalhao' or viatura.status == 'baixada' %}
+                            <button class="btn btn-sm btn-warning" onclick="abrirModalManutencao({{ viatura.pk }}, '{{ viatura.prefixo }}', true)">
                                 <i class="bi bi-wrench"></i> Manutenção
                             </button>
+                            <button class="btn btn-sm btn-success" onclick="abrirModalRetorno({{ viatura.pk }}, '{{ viatura.prefixo }}')">
+                                <i class="bi bi-check-circle"></i> Retornar
+                            </button>
                         {% else %}
-                            <button class="btn btn-sm btn-success w-100 mt-2" onclick="retornarOperacao({{ viatura.pk }}, '{{ viatura.prefixo }}')">
-                                <i class="bi bi-check-circle"></i> Retornar à Operação
+                            <button class="btn btn-sm btn-warning" onclick="abrirModalManutencao({{ viatura.pk }}, '{{ viatura.prefixo }}', false)">
+                                <i class="bi bi-wrench"></i> Manutenção
                             </button>
                         {% endif %}
                     </div>
@@ -251,20 +254,33 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-warning">
-                <h5 class="modal-title text-dark"><i class="bi bi-wrench"></i> Enviar para Manutenção</h5>
+                <h5 class="modal-title text-dark" id="modalManutencaoTitle"><i class="bi bi-wrench"></i> Enviar para Manutenção</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Enviando viatura <strong id="m_prefixo_display"></strong> para a oficina.</p>
+                <p>Configurando manutenção para a viatura <strong id="m_prefixo_display"></strong>.</p>
                 <form id="formManutencao">
                     <input type="hidden" id="m_viatura_id">
                     <div class="mb-3">
-                        <label class="form-label">Local (Oficina)</label>
-                        <input type="text" class="form-control" id="m_local" required>
+                        <label class="form-label">Situação do Veículo</label>
+                        <select class="form-select" id="m_situacao" required>
+                            <option value="vai_baixar">Vai Baixar</option>
+                            <option value="baixada_batalhao">Baixada(Batalhão)</option>
+                            <option value="baixada_oficina">Baixada(Oficina)</option>
+                        </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Motivo</label>
-                        <input type="text" class="form-control" id="m_motivo" required>
+                        <label class="form-label">Adicionar Motivo</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="m_motivo_input" placeholder="Ex: Vazamento de óleo">
+                            <button class="btn btn-outline-warning text-dark fw-bold" type="button" onclick="adicionarMotivo()">Adicionar</button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Lista de Motivos</label>
+                        <div id="m_motivos_list" class="border border-secondary rounded p-2" style="min-height: 50px; background-color: #121820;">
+                            <!-- Rendered dynamically -->
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Observações Extras</label>
@@ -274,7 +290,39 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-warning" onclick="salvarManutencao()">Confirmar Baixa</button>
+                <button type="button" class="btn btn-warning text-dark fw-bold" id="btnConfirmarBaixa" onclick="salvarManutencao()">Confirmar Baixa</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Retornar à Operação -->
+<div class="modal fade" id="modalRetorno" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-check-circle"></i> Retornar à Operação</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Retornando a viatura <strong id="r_prefixo_display"></strong> para a operação.</p>
+                <form id="formRetorno">
+                    <input type="hidden" id="r_viatura_id">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Marque se os motivos foram sanados:</label>
+                        <div id="r_motivos_checklist" class="border border-secondary rounded p-3 bg-dark">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Observações de Retorno</label>
+                        <textarea class="form-control" id="r_obs" rows="2" placeholder="Descreva os reparos realizados ou observações extras"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="salvarRetorno()">Confirmar Retorno</button>
             </div>
         </div>
     </div>
@@ -320,6 +368,42 @@
 const modalViatura = new bootstrap.Modal(document.getElementById('modalViatura'));
 const modalManutencao = new bootstrap.Modal(document.getElementById('modalManutencao'));
 const modalHistorico = new bootstrap.Modal(document.getElementById('modalHistorico'));
+const modalRetorno = new bootstrap.Modal(document.getElementById('modalRetorno'));
+
+let motivosSelecionados = [];
+
+function adicionarMotivo() {
+    let input = document.getElementById('m_motivo_input');
+    let val = input.value.trim();
+    if (val === '') return;
+    motivosSelecionados.push(val);
+    input.value = '';
+    renderMotivos();
+}
+
+function removerMotivo(index) {
+    motivosSelecionados.splice(index, 1);
+    renderMotivos();
+}
+
+function renderMotivos() {
+    let container = document.getElementById('m_motivos_list');
+    container.innerHTML = '';
+    if (motivosSelecionados.length === 0) {
+        container.innerHTML = '<div class="text-secondary small py-2 text-center">Nenhum motivo adicionado. Adicione pelo menos um.</div>';
+        return;
+    }
+    motivosSelecionados.forEach((mot, index) => {
+        container.innerHTML += `
+            <div class="d-flex justify-content-between align-items-center bg-dark border border-secondary rounded p-2 mb-1">
+                <span class="text-white small fw-bold">${mot}</span>
+                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="removerMotivo(${index})">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        `;
+    });
+}
 
 function abrirModalViatura(id='', prefixo='', placa='', marca='', modelo='', tipo='carro', km_atual=0, limite_oleo=10000, has_open_turno=false, status='operando') {
     document.getElementById('v_id').value = id;
@@ -381,24 +465,53 @@ async function salvarViatura() {
     } catch(e) { alert("Erro de conexão"); }
 }
 
-function abrirModalManutencao(id, prefixo) {
+async function abrirModalManutencao(id, prefixo, isEdit) {
     document.getElementById('m_viatura_id').value = id;
     document.getElementById('m_prefixo_display').innerText = prefixo;
-    document.getElementById('formManutencao').reset();
+    document.getElementById('m_obs').value = '';
+    document.getElementById('m_motivo_input').value = '';
+
+    document.getElementById('modalManutencaoTitle').innerText = isEdit ? 'Editar Dados da Manutenção' : 'Enviar para Manutenção';
+    document.getElementById('btnConfirmarBaixa').innerText = isEdit ? 'Salvar Alterações' : 'Confirmar Baixa';
+
+    motivosSelecionados = [];
+
+    if (isEdit) {
+        try {
+            let response = await fetch(`/frota/api/manutencao-ativa/${id}/`);
+            let result = await response.json();
+            if (result.exists) {
+                document.getElementById('m_situacao').value = result.situacao;
+                motivosSelecionados = result.motivos;
+                document.getElementById('m_obs').value = result.observacoes;
+            }
+        } catch (e) {
+            console.error("Erro ao carregar dados da manutenção ativa", e);
+        }
+    } else {
+        document.getElementById('m_situacao').value = 'baixada_oficina';
+    }
+
+    renderMotivos();
     modalManutencao.show();
 }
 
 async function salvarManutencao() {
-    let payload = {
-        viatura_id: document.getElementById('m_viatura_id').value,
-        local: document.getElementById('m_local').value,
-        motivo: document.getElementById('m_motivo').value,
-        observacoes: document.getElementById('m_obs').value
-    };
+    let viaturaId = document.getElementById('m_viatura_id').value;
+    let situacao = document.getElementById('m_situacao').value;
+    let obs = document.getElementById('m_obs').value;
 
-    if(!payload.local || !payload.motivo) {
-        alert("Preencha o Local e Motivo."); return;
+    if (motivosSelecionados.length === 0) {
+        alert("Por favor, adicione pelo menos um motivo para a manutenção.");
+        return;
     }
+
+    let payload = {
+        viatura_id: viaturaId,
+        situacao: situacao,
+        motivos: motivosSelecionados,
+        observacoes: obs
+    };
 
     try {
         let response = await fetch("{% url 'frota:api_enviar_manutencao' %}", {
@@ -415,23 +528,74 @@ async function salvarManutencao() {
     } catch(e) { alert("Erro de conexão"); }
 }
 
-async function retornarOperacao(id, prefixo) {
-    if(confirm(`Confirmar o retorno da viatura ${prefixo} à operação?`)) {
-        try {
-            let response = await fetch("{% url 'frota:api_retornar_manutencao' %}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({viatura_id: id})
+async function abrirModalRetorno(id, prefixo) {
+    document.getElementById('r_viatura_id').value = id;
+    document.getElementById('r_prefixo_display').innerText = prefixo;
+    document.getElementById('r_obs').value = '';
+
+    let checklist = document.getElementById('r_motivos_checklist');
+    checklist.innerHTML = '<span class="text-secondary small">Carregando motivos...</span>';
+
+    modalRetorno.show();
+
+    try {
+        let response = await fetch(`/frota/api/manutencao-ativa/${id}/`);
+        let result = await response.json();
+        checklist.innerHTML = '';
+        if (result.exists && result.motivos.length > 0) {
+            result.motivos.forEach((mot, idx) => {
+                checklist.innerHTML += `
+                    <div class="form-check mb-2">
+                        <input class="form-check-input r-motive-check" type="checkbox" id="chk_retorno_${idx}" value="${mot}" required>
+                        <label class="form-check-label text-white small" for="chk_retorno_${idx}">
+                            ${mot} <span class="text-success fw-bold">(Sanado)</span>
+                        </label>
+                    </div>
+                `;
             });
-            if(response.ok) location.reload();
-            else {
-                let res = await response.json();
-                alert("Erro: " + res.error);
-            }
-        } catch(e) { alert("Erro de conexão"); }
+        } else {
+            checklist.innerHTML = '<span class="text-secondary small">Nenhum motivo específico cadastrado.</span>';
+        }
+    } catch (e) {
+        checklist.innerHTML = '<span class="text-danger small">Erro ao carregar motivos.</span>';
+    }
+}
+
+async function salvarRetorno() {
+    let id = document.getElementById('r_viatura_id').value;
+    let obs = document.getElementById('r_obs').value;
+
+    let checks = document.querySelectorAll('.r-motive-check');
+    let allChecked = true;
+    checks.forEach(c => {
+        if (!c.checked) allChecked = false;
+    });
+
+    if (checks.length > 0 && !allChecked) {
+        alert("Por favor, marque todos os motivos como sanados para retornar o veículo à operação.");
+        return;
+    }
+
+    try {
+        let response = await fetch("{% url 'frota:api_retornar_manutencao' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                viatura_id: id,
+                observacoes: obs
+            })
+        });
+        let result = await response.json();
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert("Erro: " + result.error);
+        }
+    } catch (e) {
+        alert("Erro de conexão.");
     }
 }
 
