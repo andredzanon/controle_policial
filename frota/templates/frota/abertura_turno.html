@@ -34,11 +34,11 @@
             <table class="table mb-0 align-middle">
                 <thead class="table-dark">
                     <tr>
+                        <th style="width: 100px;">Status</th>
                         <th>Prefixo</th>
                         <th>Modelo</th>
-                        <th>Placa</th>
                         <th style="width: 200px;">KM Inicial</th>
-                        <th class="text-center" style="width: 100px;">Ativar</th>
+                        <th>Motorista</th>
                     </tr>
                 </thead>
                 <tbody id="tabelaViaturas">
@@ -49,13 +49,47 @@
     </div>
 </div>
 
+<!-- Datalist para autocomplete de motoristas -->
+<datalist id="listaMotoristas"></datalist>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
 let viaturasAtuais = [];
+let motoristasLista = [];
+let isDirty = false;
 
+// Warn user before leaving page with unsaved changes
+window.addEventListener('beforeunload', function (e) {
+    if (isDirty) {
+        e.preventDefault();
+        e.returnValue = 'Você tem alterações não salvas. Deseja realmente sair?';
+    }
+});
+
+// Load resources on start
 carregarViaturas();
+carregarMotoristas();
+
+async function carregarMotoristas() {
+    try {
+        let res = await fetch("{% url 'frota:api_motoristas' %}");
+        let p = await res.json();
+        if (res.ok) {
+            motoristasLista = p.motoristas;
+            let datalist = document.getElementById('listaMotoristas');
+            datalist.innerHTML = '';
+            motoristasLista.forEach(nome => {
+                let opt = document.createElement('option');
+                opt.value = nome;
+                datalist.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error("Erro ao carregar motoristas", e);
+    }
+}
 
 async function carregarViaturas() {
     let tbody = document.getElementById('tabelaViaturas');
@@ -79,44 +113,64 @@ async function carregarViaturas() {
 
         tbody.innerHTML = '';
         viaturasAtuais.forEach(v => {
-            let checked = v.selecionado ? 'checked' : '';
-            let rowClass = v.selecionado ? 'table-success' : 'table-danger';
+            let rowClass = v.selecionado ? 'table-success' : '';
+            let badgeClass = v.selecionado ? 'bg-success' : 'bg-danger';
+            let badgeText = v.selecionado ? 'Ativo' : 'Inativo';
+            
             tbody.innerHTML += `
                 <tr id="row_${v.id}" class="${rowClass}">
+                    <td>
+                        <span id="badge_${v.id}" class="badge ${badgeClass}">${badgeText}</span>
+                    </td>
                     <td class="fw-bold">${v.prefixo}</td>
                     <td>${v.modelo}</td>
-                    <td>${v.placa}</td>
                     <td>
-                        <input type="number" class="form-control form-control-sm km-input" id="km_${v.id}" value="${v.km_atual}" min="0" ${!v.selecionado ? 'disabled' : ''}>
+                        <input type="number" class="form-control form-control-sm km-input" id="km_${v.id}" value="${v.km_atual}" min="0">
                     </td>
-                    <td class="text-center">
-                        <div class="form-check d-flex justify-content-center">
-                            <input class="form-check-input chk-viatura" type="checkbox" id="chk_${v.id}" value="${v.id}" ${checked} onchange="toggleRow(${v.id})">
-                        </div>
+                    <td>
+                        <input type="text" class="form-control form-control-sm motorista-input text-uppercase" id="motorista_${v.id}" value="${v.motorista || ''}" list="listaMotoristas" placeholder="DIGITE O MOTORISTA" oninput="atualizarStatus(${v.id})">
                     </td>
                 </tr>
             `;
         });
+        isDirty = false; // Reset clean state on load
     } catch(e) {
         tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">Erro de conexão.</td></tr>';
     }
 }
 
-function toggleRow(id) {
-    let chk = document.getElementById(`chk_${id}`);
-    let kmInput = document.getElementById(`km_${id}`);
+function atualizarStatus(id) {
+    let input = document.getElementById(`motorista_${id}`);
+    
+    // Force uppercase and accept only letters and spaces
+    let val = input.value;
+    let cleanVal = val.replace(/[^a-zA-Z\s]/g, '').toUpperCase();
+    if (val !== cleanVal) {
+        input.value = cleanVal;
+    }
+    
+    let badge = document.getElementById(`badge_${id}`);
     let row = document.getElementById(`row_${id}`);
     
-    kmInput.disabled = !chk.checked;
-    
-    if (chk.checked) {
-        row.classList.remove('table-danger');
+    if (cleanVal.trim() !== '') {
+        badge.className = 'badge bg-success';
+        badge.innerText = 'Ativo';
         row.classList.add('table-success');
     } else {
+        badge.className = 'badge bg-danger';
+        badge.innerText = 'Inativo';
         row.classList.remove('table-success');
-        row.classList.add('table-danger');
     }
+    
+    isDirty = true;
 }
+
+// Watch input changes on table for dirty flag
+document.getElementById('tabelaViaturas').addEventListener('input', function(e) {
+    if (e.target.classList.contains('km-input')) {
+        isDirty = true;
+    }
+});
 
 async function salvarTurno() {
     let payload = {
@@ -124,12 +178,12 @@ async function salvarTurno() {
     };
 
     viaturasAtuais.forEach(v => {
-        let chk = document.getElementById(`chk_${v.id}`);
         let kmInput = document.getElementById(`km_${v.id}`);
+        let motoristaInput = document.getElementById(`motorista_${v.id}`);
         payload.viaturas.push({
             id: v.id,
             km_inicial: parseInt(kmInput.value) || 0,
-            selecionado: chk.checked
+            motorista: motoristaInput.value.trim()
         });
     });
 
@@ -150,7 +204,9 @@ async function salvarTurno() {
         
         if(res.ok) {
             alert(result.message);
+            isDirty = false;
             carregarViaturas();
+            carregarMotoristas();
         } else {
             alert("Erro: " + result.error);
         }

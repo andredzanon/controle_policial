@@ -61,6 +61,12 @@ class RegistroQuilometragem(models.Model):
     data_saida = models.DateTimeField(default=timezone.now)
     data_retorno = models.DateTimeField(null=True, blank=True)
 
+class Motorista(models.Model):
+    nome = models.CharField(max_length=150, unique=True)
+
+    def __str__(self):
+        return self.nome
+
 class AberturaTurnoViatura(models.Model):
     data = models.DateField(default=timezone.now)
     data_abertura = models.DateTimeField(default=timezone.now)
@@ -71,6 +77,7 @@ class AberturaTurnoViatura(models.Model):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     relatorio_turno = models.OneToOneField('ocorrencias.RelatorioTurno', on_delete=models.SET_NULL, null=True, blank=True, related_name='abertura_turno')
+    motorista = models.ForeignKey(Motorista, on_delete=models.SET_NULL, null=True, blank=True, related_name='turnos_abertos')
 
     def __str__(self):
         return f"{self.data_abertura.strftime('%d/%m/%Y %H:%M')} - {self.viatura.prefixo}"

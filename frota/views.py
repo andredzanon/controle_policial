@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST, require_GET
 from django.utils import timezone
-from .models import Viatura, HistoricoManutencao, AberturaTurnoViatura
+from .models import Viatura, HistoricoManutencao, AberturaTurnoViatura, Motorista
 
 @login_required
 def dashboard(request):
@@ -158,9 +158,11 @@ def api_viaturas_operantes(request):
             if abertura:
                 km = abertura.km_inicial
                 selecionado = True
+                motorista_nome = abertura.motorista.nome if abertura.motorista else ''
             else:
                 km = v.km_atual
                 selecionado = False
+                motorista_nome = ''
                 
             dados.append({
                 'id': v.id,
@@ -168,7 +170,8 @@ def api_viaturas_operantes(request):
                 'placa': v.placa,
                 'modelo': v.modelo,
                 'km_atual': km,
-                'selecionado': selecionado
+                'selecionado': selecionado,
+                'motorista': motorista_nome
             })
             
         return JsonResponse({'viaturas': dados})
@@ -183,6 +186,7 @@ from django.db import transaction
 @require_POST
 def api_salvar_abertura_turno(request):
     try:
+        import re
         payload = json.loads(request.body)
         viaturas_dados = payload.get('viaturas', [])
         
@@ -190,28 +194,48 @@ def api_salvar_abertura_turno(request):
             for v_data in viaturas_dados:
                 v_id = v_data.get('id')
                 km_inicial = int(v_data.get('km_inicial', 0))
-                selecionado = v_data.get('selecionado', False)
+                motorista_raw = v_data.get('motorista', '').strip()
                 
                 v = Viatura.objects.get(pk=v_id)
                 open_turno = v.turnos_abertos.filter(data_encerramento__isnull=True).first()
                 
-                if selecionado:
-                    if open_turno:
-                        open_turno.km_inicial = km_inicial
-                        open_turno.save()
+                if motorista_raw:
+                    # Sanitize: letters and space only, uppercase
+                    nome_limpo = re.sub(r'[^A-Z\s]', '', motorista_raw.upper()).strip()
+                    if nome_limpo:
+                        motorista_obj, _ = Motorista.objects.get_or_create(nome=nome_limpo)
+                        
+                        if open_turno:
+                            open_turno.km_inicial = km_inicial
+                            open_turno.motorista = motorista_obj
+                            open_turno.save()
+                        else:
+                            open_turno = AberturaTurnoViatura.objects.create(
+                                viatura=v,
+                                km_inicial=km_inicial,
+                                usuario=request.user,
+                                data_abertura=timezone.now(),
+                                motorista=motorista_obj
+                            )
+                        v.km_atual = km_inicial
+                        v.save()
                     else:
-                        open_turno = AberturaTurnoViatura.objects.create(
-                            viatura=v,
-                            km_inicial=km_inicial,
-                            usuario=request.user,
-                            data_abertura=timezone.now()
-                        )
-                    v.km_atual = km_inicial
-                    v.save()
+                        if open_turno:
+                            open_turno.delete()
                 else:
                     if open_turno:
                         open_turno.delete()
                     
         return JsonResponse({'status': 'sucesso', 'message': 'Turno aberto/atualizado com sucesso.'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@require_GET
+def api_motoristas(request):
+    try:
+        motoristas = Motorista.objects.all().order_by('nome')
+        dados = [m.nome for m in motoristas]
+        return JsonResponse({'motoristas': dados})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
