@@ -20,9 +20,6 @@
                 <button type="button" class="btn btn-success me-2" id="btnWhatsapp" onclick="abrirModalWhatsapp()">
                     <i class="bi bi-whatsapp"></i> Relatório WhatsApp
                 </button>
-                <button type="button" class="btn btn-primary" id="btnSalvar" onclick="salvarTurno()">
-                    <i class="bi bi-cloud-arrow-up"></i> Salvar Abertura de Turno
-                </button>
             </div>
         </div>
     </div>
@@ -174,10 +171,10 @@ async function carregarViaturas() {
                     <td class="fw-bold">${v.prefixo}</td>
                     <td>${v.modelo}</td>
                     <td>
-                        <input type="number" class="form-control form-control-sm km-input" id="km_${v.id}" value="${v.km_atual}" min="0">
+                        <input type="number" class="form-control form-control-sm km-input" id="km_${v.id}" value="${v.km_atual}" min="0" onblur="autosaveTurno(${v.id})">
                     </td>
                     <td>
-                        <input type="text" class="form-control form-control-sm motorista-input text-uppercase" id="motorista_${v.id}" value="${motoristaVal}" list="listaMotoristas" placeholder="DIGITE O MOTORISTA" oninput="atualizarStatus(${v.id})">
+                        <input type="text" class="form-control form-control-sm motorista-input text-uppercase" id="motorista_${v.id}" value="${motoristaVal}" list="listaMotoristas" placeholder="DIGITE O MOTORISTA" oninput="atualizarStatus(${v.id})" onblur="autosaveTurno(${v.id})">
                     </td>
                     <td class="text-center">
                         <button type="button" id="btn_trash_${v.id}" class="btn btn-sm ${trashBtnClass}" onclick="excluirTurno(${v.id}, '${v.prefixo}')" ${trashBtnDisabled}>
@@ -226,49 +223,54 @@ document.getElementById('tabelaViaturas').addEventListener('input', function(e) 
     }
 });
 
-async function salvarTurno() {
-    let payload = {
-        viaturas: []
-    };
+async function autosaveTurno(id) {
+    let kmInput = document.getElementById(`km_${id}`);
+    let motoristaInput = document.getElementById(`motorista_${id}`);
+    if (!kmInput || !motoristaInput) return;
 
-    viaturasAtuais.forEach(v => {
-        let kmInput = document.getElementById(`km_${v.id}`);
-        let motoristaInput = document.getElementById(`motorista_${v.id}`);
-        payload.viaturas.push({
-            id: v.id,
-            km_inicial: parseInt(kmInput.value) || 0,
-            motorista: motoristaInput.value.trim()
-        });
-    });
+    let kmVal = parseInt(kmInput.value) || 0;
+    let motoristaVal = motoristaInput.value.trim();
 
-    let btn = document.getElementById('btnSalvar');
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Salvando...';
-    btn.disabled = true;
-
-    try {
-        let res = await fetch("{% url 'frota:api_salvar_abertura_turno' %}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify(payload)
-        });
-        let result = await res.json();
-        
-        if(res.ok) {
-            alert(result.message);
-            isDirty = false;
-            carregarViaturas();
-            carregarMotoristas();
-        } else {
-            alert("Erro: " + result.error);
+    if (kmVal > 0 && motoristaVal !== '') {
+        try {
+            let res = await fetch("{% url 'frota:api_salvar_abertura_turno' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    viaturas: [{
+                        id: id,
+                        km_inicial: kmVal,
+                        motorista: motoristaVal
+                    }]
+                })
+            });
+            if (res.ok) {
+                // Update visually
+                let badge = document.getElementById(`badge_${id}`);
+                if (badge) {
+                    badge.className = 'badge bg-success';
+                    badge.innerText = 'Ativo';
+                }
+                let row = document.getElementById(`row_${id}`);
+                if (row) {
+                    row.className = 'table-success';
+                }
+                let trashBtn = document.getElementById(`btn_trash_${id}`);
+                if (trashBtn) {
+                    trashBtn.className = 'btn btn-sm btn-danger';
+                    trashBtn.removeAttribute('disabled');
+                }
+                isDirty = false;
+                
+                // Refresh datalist options if a new driver was introduced
+                carregarMotoristas();
+            }
+        } catch (e) {
+            console.error("Erro na conexão ao salvar turno automaticamente.");
         }
-    } catch(e) {
-        alert("Erro de conexão.");
-    } finally {
-        btn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i> Salvar Abertura de Turno';
-        btn.disabled = false;
     }
 }
 
@@ -301,7 +303,43 @@ async function excluirTurno(id, prefixo) {
 // Global variable to keep track of active viaturas list in the modal
 let previewViaturas = [];
 
-function abrirModalWhatsapp() {
+async function abrirModalWhatsapp() {
+    // 1. Save all shifts that have both km_inicial and motorista filled
+    let viaturasParaSalvar = [];
+    viaturasAtuais.forEach(v => {
+        let kmInput = document.getElementById(`km_${v.id}`);
+        let motoristaInput = document.getElementById(`motorista_${v.id}`);
+        if (kmInput && motoristaInput) {
+            let kmVal = parseInt(kmInput.value) || 0;
+            let motoristaVal = motoristaInput.value.trim();
+            if (kmVal > 0 && motoristaVal !== '') {
+                viaturasParaSalvar.push({
+                    id: v.id,
+                    km_inicial: kmVal,
+                    motorista: motoristaVal
+                });
+            }
+        }
+    });
+
+    if (viaturasParaSalvar.length > 0) {
+        try {
+            await fetch("{% url 'frota:api_salvar_abertura_turno' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ viaturas: viaturasParaSalvar })
+            });
+            isDirty = false;
+            // Also refresh motoristas datalist
+            carregarMotoristas();
+        } catch (e) {
+            console.error("Erro ao salvar turnos antes do WhatsApp", e);
+        }
+    }
+
     let tbody = document.getElementById('tabelaPreviewViaturas');
     tbody.innerHTML = '';
     previewViaturas = [];
