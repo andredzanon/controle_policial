@@ -161,7 +161,7 @@
                                 <i class="bi bi-check-circle"></i> Retornar
                             </button>
                         {% else %}
-                            <button class="btn btn-sm btn-warning" onclick="abrirModalManutencao({{ viatura.pk }}, '{{ viatura.prefixo }}', false)">
+                            <button class="btn btn-sm btn-warning" onclick="{% if viatura.has_open_turno %}alert('Não é possível abrir manutenção para esta viatura pois ela possui um turno em andamento.');{% else %}abrirModalManutencao({{ viatura.pk }}, '{{ viatura.prefixo }}', false){% endif %}">
                                 <i class="bi bi-wrench"></i> Manutenção
                             </button>
                         {% endif %}

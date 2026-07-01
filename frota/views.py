@@ -1,6 +1,9 @@
 import json
+# pyrefly: ignore [missing-import]
 from django.shortcuts import render, get_object_or_404
+# pyrefly: ignore [missing-import]
 from django.http import JsonResponse
+# pyrefly: ignore [missing-import]
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST, require_GET
 from django.utils import timezone
@@ -144,6 +147,10 @@ def api_enviar_manutencao(request):
             msg = 'Manutenção atualizada com sucesso.'
         else:
             # Create new maintenance
+            # Rule: cannot open maintenance for a vehicle with an open shift
+            if v.has_open_turno:
+                return JsonResponse({'error': 'Não é possível abrir manutenção para uma viatura que possui um turno em andamento.'}, status=400)
+                
             # Rule: only one active maintenance at a time
             if v.status in [Viatura.StatusViatura.BAIXADA_OFICINA, Viatura.StatusViatura.BAIXADA_BATALHAO, Viatura.StatusViatura.VAI_BAIXAR]:
                 return JsonResponse({'error': 'A viatura já possui uma manutenção em andamento.'}, status=400)
