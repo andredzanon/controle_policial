@@ -239,3 +239,19 @@ def api_motoristas(request):
         return JsonResponse({'motoristas': dados})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@require_POST
+def api_cancelar_abertura_turno(request):
+    try:
+        payload = json.loads(request.body)
+        viatura_id = payload.get('viatura_id')
+        v = get_object_or_404(Viatura, pk=viatura_id)
+        
+        open_turno = v.turnos_abertos.filter(data_encerramento__isnull=True).first()
+        if open_turno:
+            open_turno.delete()
+            
+        return JsonResponse({'status': 'sucesso', 'message': 'Abertura de turno cancelada com sucesso.', 'km_atual': v.km_atual})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

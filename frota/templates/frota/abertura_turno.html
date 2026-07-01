@@ -39,10 +39,11 @@
                         <th>Modelo</th>
                         <th style="width: 200px;">KM Inicial</th>
                         <th>Motorista</th>
+                        <th class="text-center" style="width: 80px;">Ações</th>
                     </tr>
                 </thead>
                 <tbody id="tabelaViaturas">
-                    <tr><td colspan="5" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span> Carregando viaturas...</td></tr>
+                    <tr><td colspan="6" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span> Carregando viaturas...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -93,30 +94,37 @@ async function carregarMotoristas() {
 
 async function carregarViaturas() {
     let tbody = document.getElementById('tabelaViaturas');
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span> Carregando...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span> Carregando...</td></tr>';
     
     try {
         let res = await fetch("{% url 'frota:api_viaturas_operantes' %}");
         let p = await res.json();
         
         if(!res.ok) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">Erro: ${p.error}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">Erro: ${p.error}</td></tr>`;
             return;
         }
 
         viaturasAtuais = p.viaturas;
         
         if(viaturasAtuais.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4">Nenhuma viatura operante no momento.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4">Nenhuma viatura operante no momento.</td></tr>`;
             return;
         }
 
         tbody.innerHTML = '';
         viaturasAtuais.forEach(v => {
+            let rowClass = v.selecionado ? 'table-success' : '';
+            let badgeClass = v.selecionado ? 'bg-success' : 'bg-danger';
+            let badgeText = v.selecionado ? 'Ativo' : 'Inativo';
+            let motoristaVal = v.motorista || '';
+            let trashBtnClass = v.selecionado ? 'btn-danger' : 'btn-secondary disabled';
+            let trashBtnDisabled = v.selecionado ? '' : 'disabled';
+            
             tbody.innerHTML += `
-                <tr id="row_${v.id}" class="">
+                <tr id="row_${v.id}" class="${rowClass}">
                     <td>
-                        <span id="badge_${v.id}" class="badge bg-danger">Inativo</span>
+                        <span id="badge_${v.id}" class="badge ${badgeClass}">${badgeText}</span>
                     </td>
                     <td class="fw-bold">${v.prefixo}</td>
                     <td>${v.modelo}</td>
@@ -124,14 +132,19 @@ async function carregarViaturas() {
                         <input type="number" class="form-control form-control-sm km-input" id="km_${v.id}" value="${v.km_atual}" min="0">
                     </td>
                     <td>
-                        <input type="text" class="form-control form-control-sm motorista-input text-uppercase" id="motorista_${v.id}" value="" list="listaMotoristas" placeholder="DIGITE O MOTORISTA" oninput="atualizarStatus(${v.id})">
+                        <input type="text" class="form-control form-control-sm motorista-input text-uppercase" id="motorista_${v.id}" value="${motoristaVal}" list="listaMotoristas" placeholder="DIGITE O MOTORISTA" oninput="atualizarStatus(${v.id})">
+                    </td>
+                    <td class="text-center">
+                        <button type="button" id="btn_trash_${v.id}" class="btn btn-sm ${trashBtnClass}" onclick="excluirTurno(${v.id}, '${v.prefixo}')" ${trashBtnDisabled}>
+                            <i class="bi bi-trash"></i>
+                        </button>
                     </td>
                 </tr>
             `;
         });
         isDirty = false; // Reset clean state on load
     } catch(e) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">Erro de conexão.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">Erro de conexão.</td></tr>';
     }
 }
 
@@ -211,6 +224,32 @@ async function salvarTurno() {
     } finally {
         btn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i> Salvar Abertura de Turno';
         btn.disabled = false;
+    }
+}
+
+async function excluirTurno(id, prefixo) {
+    if (confirm(`Deseja realmente excluir o registro de abertura do turno da viatura ${prefixo}?`)) {
+        try {
+            let res = await fetch("{% url 'frota:api_cancelar_abertura_turno' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ viatura_id: id })
+            });
+            let result = await res.json();
+            
+            if (res.ok) {
+                alert(result.message);
+                isDirty = false;
+                carregarViaturas();
+            } else {
+                alert("Erro: " + result.error);
+            }
+        } catch (e) {
+            alert("Erro de conexão.");
+        }
     }
 }
 </script>
