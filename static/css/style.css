@@ -14,11 +14,54 @@ main {
     flex: 1;
 }
 
-/* Adjustments for the dark theme to make it slightly darker blueish gray */
+/* Adjustments for the dark theme to make it slightly darker blueish gray with gold accents */
 [data-bs-theme="dark"] {
     --bs-body-bg: #121820;
-    --bs-body-color: #e0e6ed;
+    --bs-body-color: #e5cb93; /* Smooth light gold for readability */
     --bs-tertiary-bg: #1a2332;
+    --bs-headings-color: #c19846; /* Headings in reference gold */
+    --bs-link-color: #c19846;
+    --bs-link-hover-color: #e5cb93;
+}
+
+/* Force headings, brands, active links, and white texts to reference gold (#c19846) in dark mode */
+[data-bs-theme="dark"] h1,
+[data-bs-theme="dark"] h2,
+[data-bs-theme="dark"] h3,
+[data-bs-theme="dark"] h4,
+[data-bs-theme="dark"] h5,
+[data-bs-theme="dark"] h6,
+[data-bs-theme="dark"] .h1,
+[data-bs-theme="dark"] .h2,
+[data-bs-theme="dark"] .h3,
+[data-bs-theme="dark"] .h4,
+[data-bs-theme="dark"] .h5,
+[data-bs-theme="dark"] .h6,
+[data-bs-theme="dark"] .navbar-brand,
+[data-bs-theme="dark"] .card-title,
+[data-bs-theme="dark"] .table th,
+[data-bs-theme="dark"] .text-white,
+[data-bs-theme="dark"] .text-light,
+[data-bs-theme="dark"] .text-body-emphasis,
+[data-bs-theme="dark"] .modal-title {
+    color: #c19846 !important;
+}
+
+/* Custom styles for active links and elements */
+[data-bs-theme="dark"] .nav-link.active {
+    color: #c19846 !important;
+    background-color: #1a2332 !important;
+}
+
+[data-bs-theme="dark"] .bg-dark {
+    background-color: #1a2332 !important;
+}
+
+/* Secondary texts to a softer gold */
+[data-bs-theme="dark"] .text-muted,
+[data-bs-theme="dark"] .text-body-secondary,
+[data-bs-theme="dark"] .text-secondary {
+    color: #b59b63 !important;
 }
 
 /* Accordion custom styling for mobile */
