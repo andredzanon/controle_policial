@@ -14,6 +14,70 @@
     </div>
 </div>
 
+<div class="row mb-4">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card shadow-sm border border-warning" style="background-color: #121820; border-color: #c19846 !important; border-radius: 12px;">
+            <div class="card-body p-3">
+                <h6 class="text-uppercase fw-bold mb-3" style="color: #c19846; letter-spacing: 1px; font-size: 0.95rem;">Relatório Geral</h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered text-center align-middle mb-0 text-white" style="border-color: #2b3544; background-color: transparent;">
+                        <thead style="font-size: 0.75rem; font-weight: bold; border-bottom: 2px solid #2b3544;">
+                            <tr>
+                                <th rowspan="2" class="text-secondary align-middle" style="background-color: transparent;">TIPO</th>
+                                <th class="align-middle" style="background-color: transparent;">
+                                    <span class="d-inline-block rounded-circle bg-success mb-1" style="width: 12px; height: 12px;"></span><br>
+                                    <span class="text-success" style="font-size: 0.7rem;">EM 300</span>
+                                </th>
+                                <th class="align-middle" style="background-color: transparent;">
+                                    <span class="d-inline-block rounded-circle bg-warning mb-1" style="width: 12px; height: 12px;"></span><br>
+                                    <span class="text-warning" style="font-size: 0.7rem;">VAI BAIXAR</span>
+                                </th>
+                                <th colspan="2" class="align-middle" style="background-color: transparent;">
+                                    <span class="d-inline-block rounded-circle bg-danger mb-1" style="width: 12px; height: 12px;"></span><br>
+                                    <span class="text-danger" style="font-size: 0.7rem;">BAIXADA</span>
+                                </th>
+                                <th rowspan="2" class="text-secondary align-middle" style="background-color: transparent;">TOTAL</th>
+                            </tr>
+                            <tr>
+                                <th class="text-danger align-middle py-1" style="font-size: 0.65rem; border-top: 1px solid #2b3544; background-color: transparent;">BATALHÃO</th>
+                                <th class="text-danger align-middle py-1" style="font-size: 0.65rem; border-top: 1px solid #2b3544; background-color: transparent;">OFICINA</th>
+                            </tr>
+                        </thead>
+                        <tbody style="font-weight: bold; font-size: 1rem;">
+                            <tr>
+                                <td class="text-secondary" style="font-size: 0.8rem; background-color: transparent;">AUTOS</td>
+                                <td style="background-color: transparent;">{{ resumo.autos.em_300 }}</td>
+                                <td style="background-color: transparent;">{{ resumo.autos.vai_baixar }}</td>
+                                <td style="background-color: transparent;">{{ resumo.autos.baixada_batalhao }}</td>
+                                <td style="background-color: transparent;">{{ resumo.autos.baixada_oficina }}</td>
+                                <td class="text-secondary" style="background-color: transparent;">{{ resumo.autos.total }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-secondary" style="font-size: 0.8rem; background-color: transparent;">MOTOS</td>
+                                <td style="background-color: transparent;">{{ resumo.motos.em_300 }}</td>
+                                <td style="background-color: transparent;">{{ resumo.motos.vai_baixar }}</td>
+                                <td style="background-color: transparent;">{{ resumo.motos.baixada_batalhao }}</td>
+                                <td style="background-color: transparent;">{{ resumo.motos.baixada_oficina }}</td>
+                                <td class="text-secondary" style="background-color: transparent;">{{ resumo.motos.total }}</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5" class="text-center" style="background-color: #8c6a2b; color: #121820; font-weight: 900; font-style: italic; font-size: 0.85rem; padding: 6px;">
+                                    TOTAL DE VIATURAS
+                                </td>
+                                <td style="background-color: #1a2332; font-size: 1.15rem; font-weight: bold; border-left: 2px solid #2b3544;">
+                                    {{ resumo.total_geral }}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row g-4">
     {% for viatura in viaturas %}
     <div class="col-md-6 col-lg-4">

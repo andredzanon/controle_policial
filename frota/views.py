@@ -9,7 +9,47 @@ from .models import Viatura, HistoricoManutencao, AberturaTurnoViatura, Motorist
 @login_required
 def dashboard(request):
     viaturas = Viatura.objects.all().order_by('prefixo')
-    return render(request, 'frota/dashboard.html', {'viaturas': viaturas})
+    
+    # Calculate resumo statistics
+    autos_qs = viaturas.exclude(tipo=Viatura.TipoViatura.MOTO)
+    motos_qs = viaturas.filter(tipo=Viatura.TipoViatura.MOTO)
+    
+    # Autos stats
+    autos_em_300 = autos_qs.filter(status__in=[Viatura.StatusViatura.OPERANDO, 'operante']).count()
+    autos_vai_baixar = autos_qs.filter(status__in=[Viatura.StatusViatura.VAI_BAIXAR, 'baixada_rodando']).count()
+    autos_baixada_batalhao = autos_qs.filter(status=Viatura.StatusViatura.BAIXADA_BATALHAO).count()
+    autos_baixada_oficina = autos_qs.filter(status__in=[Viatura.StatusViatura.BAIXADA_OFICINA, 'baixada']).count()
+    autos_total = autos_qs.count()
+    
+    # Motos stats
+    motos_em_300 = motos_qs.filter(status__in=[Viatura.StatusViatura.OPERANDO, 'operante']).count()
+    motos_vai_baixar = motos_qs.filter(status__in=[Viatura.StatusViatura.VAI_BAIXAR, 'baixada_rodando']).count()
+    motos_baixada_batalhao = motos_qs.filter(status=Viatura.StatusViatura.BAIXADA_BATALHAO).count()
+    motos_baixada_oficina = motos_qs.filter(status__in=[Viatura.StatusViatura.BAIXADA_OFICINA, 'baixada']).count()
+    motos_total = motos_qs.count()
+    
+    resumo = {
+        'autos': {
+            'em_300': autos_em_300,
+            'vai_baixar': autos_vai_baixar,
+            'baixada_batalhao': autos_baixada_batalhao,
+            'baixada_oficina': autos_baixada_oficina,
+            'total': autos_total,
+        },
+        'motos': {
+            'em_300': motos_em_300,
+            'vai_baixar': motos_vai_baixar,
+            'baixada_batalhao': motos_baixada_batalhao,
+            'baixada_oficina': motos_baixada_oficina,
+            'total': motos_total,
+        },
+        'total_geral': viaturas.count()
+    }
+    
+    return render(request, 'frota/dashboard.html', {
+        'viaturas': viaturas,
+        'resumo': resumo
+    })
 
 @login_required
 @require_POST
