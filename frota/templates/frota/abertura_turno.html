@@ -17,6 +17,9 @@
                 <h5 class="mb-0 text-muted"><i class="bi bi-info-circle"></i> Os turnos abertos iniciam no momento do salvamento (timestamp atual). Ajustes podem ser feitos antes da finalização com ocorrência.</h5>
             </div>
             <div class="col-md-5 text-end">
+                <button type="button" class="btn btn-success me-2" id="btnWhatsapp" onclick="abrirModalWhatsapp()">
+                    <i class="bi bi-whatsapp"></i> Relatório WhatsApp
+                </button>
                 <button type="button" class="btn btn-primary" id="btnSalvar" onclick="salvarTurno()">
                     <i class="bi bi-cloud-arrow-up"></i> Salvar Abertura de Turno
                 </button>
@@ -52,6 +55,48 @@
 
 <!-- Datalist para autocomplete de motoristas -->
 <datalist id="listaMotoristas"></datalist>
+
+<!-- Modal WhatsApp -->
+<div class="modal fade" id="modalWhatsapp" tabindex="-1" aria-labelledby="modalWhatsappLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalWhatsappLabel"><i class="bi bi-whatsapp text-success"></i> Gerar Relatório WhatsApp</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="inputMunicipio" class="form-label fw-bold">Município</label>
+                    <input type="text" class="form-control text-uppercase" id="inputMunicipio" placeholder="Ex: SÃO JOSÉ DOS PINHAIS" value="SÃO JOSÉ DOS PINHAIS">
+                </div>
+                <div class="mb-2 fw-bold">Selecione as Viaturas para o Relatório:</div>
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-bordered table-sm mb-0 align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 40px;" class="text-center">
+                                    <input type="checkbox" id="chkSelectAllPreview" checked onclick="toggleSelectAllPreview()">
+                                </th>
+                                <th>Prefixo</th>
+                                <th>KM Inicial</th>
+                                <th>Motorista</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaPreviewViaturas">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="gerarMensagemWhatsapp()">
+                    <i class="bi bi-send"></i> Enviar pelo WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
 
@@ -250,6 +295,132 @@ async function excluirTurno(id, prefixo) {
         } catch (e) {
             alert("Erro de conexão.");
         }
+    }
+}
+
+// Global variable to keep track of active viaturas list in the modal
+let previewViaturas = [];
+
+function abrirModalWhatsapp() {
+    let tbody = document.getElementById('tabelaPreviewViaturas');
+    tbody.innerHTML = '';
+    previewViaturas = [];
+
+    // Filter vehicles that have a driver filled in the main UI
+    viaturasAtuais.forEach(v => {
+        let motoristaInput = document.getElementById(`motorista_${v.id}`);
+        let motoristaVal = motoristaInput ? motoristaInput.value.trim() : '';
+        let kmInput = document.getElementById(`km_${v.id}`);
+        let kmVal = kmInput ? parseInt(kmInput.value) || 0 : v.km_atual;
+
+        if (motoristaVal !== '') {
+            previewViaturas.push({
+                id: v.id,
+                prefixo: v.prefixo,
+                km_inicial: kmVal,
+                motorista: motoristaVal
+            });
+        }
+    });
+
+    if (previewViaturas.length === 0) {
+        alert("Nenhuma viatura está com motorista vinculado no momento.");
+        return;
+    }
+
+    // Populate preview table
+    previewViaturas.forEach(v => {
+        tbody.innerHTML += `
+            <tr id="preview_row_${v.id}" class="table-success cursor-pointer" onclick="togglePreviewRow(${v.id})">
+                <td class="text-center">
+                    <input type="checkbox" id="preview_chk_${v.id}" class="preview-chk" value="${v.id}" checked onclick="event.stopPropagation(); togglePreviewRow(${v.id})">
+                </td>
+                <td class="fw-bold">${v.prefixo}</td>
+                <td>${v.km_inicial}</td>
+                <td>${v.motorista}</td>
+            </tr>
+        `;
+    });
+
+    document.getElementById('chkSelectAllPreview').checked = true;
+
+    // Open Bootstrap modal
+    let myModal = new bootstrap.Modal(document.getElementById('modalWhatsapp'));
+    myModal.show();
+}
+
+function togglePreviewRow(id) {
+    let chk = document.getElementById(`preview_chk_${id}`);
+    let row = document.getElementById(`preview_row_${id}`);
+
+    // If click was on row instead of checkbox
+    if (event && event.target.tagName !== 'INPUT') {
+        chk.checked = !chk.checked;
+    }
+
+    if (chk.checked) {
+        row.classList.add('table-success');
+    } else {
+        row.classList.remove('table-success');
+    }
+
+    // Update the master check all state
+    let totalChks = document.querySelectorAll('.preview-chk').length;
+    let checkedChks = document.querySelectorAll('.preview-chk:checked').length;
+    document.getElementById('chkSelectAllPreview').checked = (totalChks === checkedChks);
+}
+
+function toggleSelectAllPreview() {
+    let selectAll = document.getElementById('chkSelectAllPreview');
+    let checkboxes = document.querySelectorAll('.preview-chk');
+    checkboxes.forEach(chk => {
+        chk.checked = selectAll.checked;
+        let id = chk.value;
+        let row = document.getElementById(`preview_row_${id}`);
+        if (chk.checked) {
+            row.classList.add('table-success');
+        } else {
+            row.classList.remove('table-success');
+        }
+    });
+}
+
+function gerarMensagemWhatsapp() {
+    let municipio = document.getElementById('inputMunicipio').value.trim();
+    if (municipio === '') {
+        alert("Por favor, digite o município.");
+        return;
+    }
+
+    // Collect selected viaturas
+    let selectedViaturas = [];
+    previewViaturas.forEach(v => {
+        let chk = document.getElementById(`preview_chk_${v.id}`);
+        if (chk && chk.checked) {
+            selectedViaturas.push(v);
+        }
+    });
+
+    if (selectedViaturas.length === 0) {
+        alert("Selecione pelo menos uma viatura para o relatório.");
+        return;
+    }
+
+    // Format text message
+    let msg = `Equipes PPTRAN\n\nMUNICIPIO : ${municipio.toUpperCase()}\n\nPREFIXO\tKM INICIAL\tMOTORISTA\n`;
+    selectedViaturas.forEach(v => {
+        msg += `${v.prefixo}\t${v.km_inicial}\t${v.motorista}\n`;
+    });
+
+    // Open WhatsApp URL
+    let url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(msg);
+    window.open(url, "_blank");
+
+    // Close modal
+    let myModalEl = document.getElementById('modalWhatsapp');
+    let modalInstance = bootstrap.Modal.getInstance(myModalEl);
+    if (modalInstance) {
+        modalInstance.hide();
     }
 }
 </script>
