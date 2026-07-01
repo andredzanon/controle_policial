@@ -16,7 +16,7 @@
 
 <div class="row mb-4">
     <div class="col-12 col-md-8 col-lg-6">
-        <div class="card shadow-sm border border-warning" style="background-color: #121820; border-color: #c19846 !important; border-radius: 12px;">
+        <div class="card shadow-sm border border-warning mb-3" style="background-color: #121820; border-color: #c19846 !important; border-radius: 12px;">
             <div class="card-body p-3">
                 <h6 class="text-uppercase fw-bold mb-3" style="color: #c19846; letter-spacing: 1px; font-size: 0.95rem;">Relatório Geral</h6>
                 <div class="table-responsive">
@@ -72,6 +72,22 @@
                             </tr>
                         </tfoot>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border border-warning" style="background-color: #121820; border-color: #c19846 !important; border-radius: 12px;">
+            <div class="card-body p-3">
+                <h6 class="text-uppercase fw-bold mb-3" style="color: #c19846; letter-spacing: 1px; font-size: 0.95rem;">Troca de Óleo</h6>
+                <div class="d-flex flex-column gap-2">
+                    {% for v in troca_oleo_lista %}
+                    <div class="d-flex align-items-center text-white" style="font-size: 0.9rem; font-weight: bold;">
+                        <span class="d-inline-block rounded-circle {{ v.cor_dot }} me-2" style="width: 12px; height: 12px;"></span>
+                        <span>{{ v.prefixo }} - FALTAM {{ v.km_restante }} KM</span>
+                    </div>
+                    {% empty %}
+                    <div class="text-secondary small">Nenhuma viatura registrada.</div>
+                    {% endfor %}
                 </div>
             </div>
         </div>

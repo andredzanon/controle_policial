@@ -46,9 +46,24 @@ def dashboard(request):
         'total_geral': viaturas.count()
     }
     
+    # Calculate oil change remaining and colors
+    viaturas_list = list(viaturas)
+    for v in viaturas_list:
+        v.km_restante = v.limite_troca_oleo - v.km_atual
+        if v.km_restante < 500:
+            v.cor_dot = 'bg-danger'
+        elif v.km_restante < 1000:
+            v.cor_dot = 'bg-warning'
+        else:
+            v.cor_dot = 'bg-success'
+            
+    # Sort by km_restante ascending and take top 5
+    troca_oleo_lista = sorted(viaturas_list, key=lambda x: x.km_restante)[:5]
+    
     return render(request, 'frota/dashboard.html', {
         'viaturas': viaturas,
-        'resumo': resumo
+        'resumo': resumo,
+        'troca_oleo_lista': troca_oleo_lista
     })
 
 @login_required
