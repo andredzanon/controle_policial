@@ -12,12 +12,11 @@
 
 <div class="card shadow-sm mb-4">
     <div class="card-body">
-        <div class="row align-items-end">
-            <div class="col-md-3">
-                <label for="dataFiltro" class="form-label fw-bold">Data do Turno</label>
-                <input type="date" id="dataFiltro" class="form-control" onchange="carregarViaturas()">
+        <div class="row align-items-center">
+            <div class="col-md-7">
+                <h5 class="mb-0 text-muted"><i class="bi bi-info-circle"></i> Os turnos abertos iniciam no momento do salvamento (timestamp atual). Ajustes podem ser feitos antes da finalização com ocorrência.</h5>
             </div>
-            <div class="col-md-9 text-end">
+            <div class="col-md-5 text-end">
                 <button type="button" class="btn btn-primary" id="btnSalvar" onclick="salvarTurno()">
                     <i class="bi bi-cloud-arrow-up"></i> Salvar Abertura de Turno
                 </button>
@@ -43,7 +42,7 @@
                     </tr>
                 </thead>
                 <tbody id="tabelaViaturas">
-                    <tr><td colspan="5" class="text-center py-4">Selecione uma data para carregar.</td></tr>
+                    <tr><td colspan="5" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span> Carregando viaturas...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -56,18 +55,14 @@
 <script>
 let viaturasAtuais = [];
 
-document.getElementById('dataFiltro').valueAsDate = new Date();
 carregarViaturas();
 
 async function carregarViaturas() {
-    let data = document.getElementById('dataFiltro').value;
-    if(!data) return;
-
     let tbody = document.getElementById('tabelaViaturas');
     tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span> Carregando...</td></tr>';
     
     try {
-        let res = await fetch(`{% url 'frota:api_viaturas_operantes' %}?data=${data}`);
+        let res = await fetch("{% url 'frota:api_viaturas_operantes' %}");
         let p = await res.json();
         
         if(!res.ok) {
@@ -124,11 +119,7 @@ function toggleRow(id) {
 }
 
 async function salvarTurno() {
-    let data = document.getElementById('dataFiltro').value;
-    if(!data) { alert("Selecione uma data."); return; }
-
     let payload = {
-        data: data,
         viaturas: []
     };
 
@@ -159,6 +150,7 @@ async function salvarTurno() {
         
         if(res.ok) {
             alert(result.message);
+            carregarViaturas();
         } else {
             alert("Erro: " + result.error);
         }

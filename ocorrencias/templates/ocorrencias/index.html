@@ -23,6 +23,10 @@
                 <h5 class="card-title mb-0">Dados do Turno</h5>
             </div>
             <div class="card-body">
+                <!-- Banner de aviso/bloqueio de turno -->
+                <div id="alertaSemTurno" class="alert alert-danger d-none animate__animated animate__fadeIn" role="alert">
+                    <i class="bi bi-exclamation-octagon-fill"></i> <strong>Atenção:</strong> Não há nenhuma viatura com turno aberto. Por favor, realize a <a href="{% url 'frota:abertura_turno' %}" class="alert-link">Abertura de Turno</a> no módulo Frota para poder registrar ocorrências.
+                </div>
                 <form id="formOcorrencias">
                     {% csrf_token %}
                     <!-- Dados Iniciais -->
@@ -371,6 +375,9 @@ async function carregarViaturasPorData(dataSelecionada, viaturaEdit = null, kmEd
     let select = document.getElementById('viatura');
     select.innerHTML = '<option value="" disabled selected>Carregando...</option>';
     document.getElementById('km_inicial').value = '';
+    const alertBanner = document.getElementById('alertaSemTurno');
+    const btnSalvar = document.getElementById('btnSalvar');
+    const btnGerar = document.getElementById('btnGerarRelatorio');
 
     try {
         let res = await fetch(`{% url 'ocorrencias:api_viaturas_por_data' %}?data=${dataSelecionada}`);
@@ -399,6 +406,18 @@ async function carregarViaturasPorData(dataSelecionada, viaturaEdit = null, kmEd
             select.value = viaturaEdit;
             document.getElementById('km_inicial').value = kmEdit || select.options[select.selectedIndex]?.getAttribute('data-km') || '';
             document.getElementById('km_final').value = kmFinalEdit || '';
+        }
+
+        const hasViaturas = (data.viaturas && data.viaturas.length > 0) || viaturaEdit;
+        if (!hasViaturas) {
+            alertBanner.classList.remove('d-none');
+            select.disabled = true;
+            btnGerar.disabled = true;
+            btnSalvar.disabled = true;
+        } else {
+            alertBanner.classList.add('d-none');
+            select.disabled = false;
+            btnGerar.disabled = false;
         }
     } catch(e) {
         select.innerHTML = '<option value="" disabled selected>Erro ao carregar</option>';

@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.db import transaction
+from django.utils import timezone
 from datetime import datetime
 from frota.models import Viatura, AberturaTurnoViatura
 from .models import (
@@ -218,15 +219,35 @@ def api_salvar_relatorio(request):
 
             km_final = data.get('km_final')
             if km_final:
-                try:
-                    abertura = AberturaTurnoViatura.objects.get(data=data_str, viatura=viatura)
-                    abertura.km_final = int(km_final)
-                    abertura.save()
-                    if int(km_final) > viatura.km_atual:
-                        viatura.km_atual = int(km_final)
+                km_final_val = int(km_final)
+                if turno_id:
+                    # Edit mode
+                    abertura = AberturaTurnoViatura.objects.filter(relatorio_turno=turno).first()
+                    if abertura:
+                        if km_final_val < abertura.km_inicial:
+                            return JsonResponse({'error': f'KM final ({km_final_val}) não pode ser menor que o KM inicial ({abertura.km_inicial}) do turno.'}, status=400)
+                        abertura.km_final = km_final_val
+                        abertura.save()
+                        viatura.km_atual = km_final_val
                         viatura.save()
-                except AberturaTurnoViatura.DoesNotExist:
-                    pass
+                else:
+                    # New mode
+                    abertura = AberturaTurnoViatura.objects.filter(viatura=viatura, data_encerramento__isnull=True).first()
+                    if not abertura:
+                        return JsonResponse({'error': f'Não há turno aberto ativo para a viatura {viatura.prefixo}.'}, status=400)
+                    
+                    if km_final_val < abertura.km_inicial:
+                        return JsonResponse({'error': f'KM final ({km_final_val}) não pode ser menor que o KM inicial ({abertura.km_inicial}) do turno.'}, status=400)
+                    
+                    abertura.km_final = km_final_val
+                    abertura.data_encerramento = timezone.now()
+                    abertura.relatorio_turno = turno
+                    abertura.save()
+                    
+                    viatura.km_atual = km_final_val
+                    viatura.save()
+            else:
+                return JsonResponse({'error': 'Preencha o campo KM Final.'}, status=400)
 
         return JsonResponse({'status': 'sucesso', 'message': 'Relatório salvo com sucesso!'})
 
@@ -375,11 +396,7 @@ from django.views.decorators.http import require_GET
 @login_required
 @require_GET
 def api_viaturas_por_data(request):
-    data_str = request.GET.get('data')
-    if not data_str:
-        return JsonResponse({'error': 'Data não fornecida.'}, status=400)
-        
-    aberturas = AberturaTurnoViatura.objects.filter(data=data_str).select_related('viatura')
+    aberturas = AberturaTurnoViatura.objects.filter(data_encerramento__isnull=True).select_related('viatura')
     dados = []
     for a in aberturas:
         dados.append({
@@ -398,7 +415,7 @@ def api_obter_dados_relatorio_json(request, pk):
         km_inicial = ''
         km_final = ''
         try:
-            abertura = AberturaTurnoViatura.objects.get(data=turno.data, viatura=turno.viatura)
+            abertura = AberturaTurnoViatura.objects.get(relatorio_turno=turno)
             km_inicial = abertura.km_inicial
             km_final = abertura.km_final or ''
         except AberturaTurnoViatura.DoesNotExist:

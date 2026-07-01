@@ -64,7 +64,7 @@
 
                 <div class="mt-auto pt-3 border-top">
                     <div class="d-flex justify-content-between gap-1 flex-wrap">
-                        <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalViatura({{ viatura.pk }}, '{{ viatura.prefixo }}', '{{ viatura.placa }}', '{{ viatura.marca }}', '{{ viatura.modelo }}', '{{ viatura.tipo }}', {{ viatura.km_atual }}, {{ viatura.limite_troca_oleo }})" title="Editar">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalViatura({{ viatura.pk }}, '{{ viatura.prefixo }}', '{{ viatura.placa }}', '{{ viatura.marca }}', '{{ viatura.modelo }}', '{{ viatura.tipo }}', {{ viatura.km_atual }}, {{ viatura.limite_troca_oleo }}, {{ viatura.has_open_turno|yesno:"true,false" }})" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </button>
                         <button class="btn btn-sm btn-outline-info" onclick="verHistoricoManutencao({{ viatura.pk }}, '{{ viatura.prefixo }}')" title="Histórico de Manutenção">
@@ -136,6 +136,9 @@
                         <div class="col-6 mb-3">
                             <label class="form-label">KM Atual</label>
                             <input type="number" class="form-control" id="v_km_atual" value="0" min="0">
+                            <div id="v_km_warning" class="text-danger small mt-1 d-none">
+                                A quilometragem está travada porque há um turno aberto para esta viatura. Para ajustar, acesse a Abertura de Turno.
+                            </div>
                         </div>
                         <div class="col-6 mb-3">
                             <label class="form-label">Limite Troca Óleo</label>
@@ -227,7 +230,7 @@ const modalViatura = new bootstrap.Modal(document.getElementById('modalViatura')
 const modalManutencao = new bootstrap.Modal(document.getElementById('modalManutencao'));
 const modalHistorico = new bootstrap.Modal(document.getElementById('modalHistorico'));
 
-function abrirModalViatura(id='', prefixo='', placa='', marca='', modelo='', tipo='carro', km_atual=0, limite_oleo=10000) {
+function abrirModalViatura(id='', prefixo='', placa='', marca='', modelo='', tipo='carro', km_atual=0, limite_oleo=10000, has_open_turno=false) {
     document.getElementById('v_id').value = id;
     document.getElementById('v_prefixo').value = prefixo;
     document.getElementById('v_placa').value = placa;
@@ -236,6 +239,16 @@ function abrirModalViatura(id='', prefixo='', placa='', marca='', modelo='', tip
     document.getElementById('v_tipo').value = tipo;
     document.getElementById('v_km_atual').value = km_atual;
     document.getElementById('v_limite_oleo').value = limite_oleo;
+    
+    const kmInput = document.getElementById('v_km_atual');
+    const kmWarning = document.getElementById('v_km_warning');
+    if (has_open_turno) {
+        kmInput.disabled = true;
+        kmWarning.classList.remove('d-none');
+    } else {
+        kmInput.disabled = false;
+        kmWarning.classList.add('d-none');
+    }
     
     document.getElementById('modalViaturaTitle').innerText = id ? 'Editar Viatura' : 'Cadastrar Viatura';
     modalViatura.show();

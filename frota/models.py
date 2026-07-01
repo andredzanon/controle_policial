@@ -33,6 +33,14 @@ class Viatura(models.Model):
     def __str__(self):
         return f"{self.prefixo} - {self.modelo}"
 
+    @property
+    def has_open_turno(self):
+        return self.turnos_abertos.filter(data_encerramento__isnull=True).exists()
+
+    @property
+    def open_turno(self):
+        return self.turnos_abertos.filter(data_encerramento__isnull=True).first()
+
 class HistoricoManutencao(models.Model):
     viatura = models.ForeignKey(Viatura, on_delete=models.CASCADE, related_name='manutencoes')
     data_saida = models.DateTimeField(default=timezone.now)
@@ -55,14 +63,14 @@ class RegistroQuilometragem(models.Model):
 
 class AberturaTurnoViatura(models.Model):
     data = models.DateField(default=timezone.now)
+    data_abertura = models.DateTimeField(default=timezone.now)
+    data_encerramento = models.DateTimeField(null=True, blank=True)
     viatura = models.ForeignKey(Viatura, on_delete=models.CASCADE, related_name='turnos_abertos')
     km_inicial = models.IntegerField()
     km_final = models.IntegerField(null=True, blank=True)
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('data', 'viatura')
+    relatorio_turno = models.OneToOneField('ocorrencias.RelatorioTurno', on_delete=models.SET_NULL, null=True, blank=True, related_name='abertura_turno')
 
     def __str__(self):
-        return f"{self.data.strftime('%d/%m/%Y')} - {self.viatura.prefixo}"
+        return f"{self.data_abertura.strftime('%d/%m/%Y %H:%M')} - {self.viatura.prefixo}"
