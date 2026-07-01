@@ -113,14 +113,10 @@ async function carregarViaturas() {
 
         tbody.innerHTML = '';
         viaturasAtuais.forEach(v => {
-            let rowClass = v.selecionado ? 'table-success' : '';
-            let badgeClass = v.selecionado ? 'bg-success' : 'bg-danger';
-            let badgeText = v.selecionado ? 'Ativo' : 'Inativo';
-            
             tbody.innerHTML += `
-                <tr id="row_${v.id}" class="${rowClass}">
+                <tr id="row_${v.id}" class="">
                     <td>
-                        <span id="badge_${v.id}" class="badge ${badgeClass}">${badgeText}</span>
+                        <span id="badge_${v.id}" class="badge bg-danger">Inativo</span>
                     </td>
                     <td class="fw-bold">${v.prefixo}</td>
                     <td>${v.modelo}</td>
@@ -128,7 +124,7 @@ async function carregarViaturas() {
                         <input type="number" class="form-control form-control-sm km-input" id="km_${v.id}" value="${v.km_atual}" min="0">
                     </td>
                     <td>
-                        <input type="text" class="form-control form-control-sm motorista-input text-uppercase" id="motorista_${v.id}" value="${v.motorista || ''}" list="listaMotoristas" placeholder="DIGITE O MOTORISTA" oninput="atualizarStatus(${v.id})">
+                        <input type="text" class="form-control form-control-sm motorista-input text-uppercase" id="motorista_${v.id}" value="" list="listaMotoristas" placeholder="DIGITE O MOTORISTA" oninput="atualizarStatus(${v.id})">
                     </td>
                 </tr>
             `;
