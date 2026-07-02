@@ -198,7 +198,7 @@ def api_retornar_manutencao(request):
             checklist_lines = []
             for item in checklist:
                 mot = item.get('motivo')
-                san = 'Sanado' if item.get('sanado') else 'Não Sanado'
+                san = 'Sanado' if item.get('sanado') else 'Não Realizado'
                 checklist_lines.append(f"- {mot}: {san}")
             
             checklist_text = "\nResolução dos Motivos:\n" + "\n".join(checklist_lines) if checklist_lines else ""
