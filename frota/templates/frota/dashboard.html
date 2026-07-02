@@ -343,7 +343,6 @@
                             <tr>
                                 <th>Saída</th>
                                 <th>Retorno</th>
-                                <th>Motivo</th>
                                 <th>Local</th>
                                 <th>Observações / Resolução</th>
                             </tr>
@@ -602,7 +601,7 @@ async function salvarRetorno() {
 async function verHistoricoManutencao(id, prefixo) {
     document.getElementById('h_prefixo_display').innerText = prefixo;
     let tbody = document.getElementById('historicoBody');
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Carregando...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Carregando...</td></tr>';
     modalHistorico.show();
 
     try {
@@ -611,7 +610,7 @@ async function verHistoricoManutencao(id, prefixo) {
         
         tbody.innerHTML = '';
         if(result.historico.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary">Nenhum histórico encontrado.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-secondary">Nenhum histórico encontrado.</td></tr>';
         } else {
             result.historico.forEach(h => {
                 let rowClass = h.concluida ? '' : 'table-warning';
@@ -619,7 +618,6 @@ async function verHistoricoManutencao(id, prefixo) {
                     <tr class="${rowClass}">
                         <td>${h.data_saida}</td>
                         <td>${h.data_retorno}</td>
-                        <td>${h.motivo}</td>
                         <td>${h.local}</td>
                         <td style="white-space: pre-line;" class="small">${h.observacoes || ''}</td>
                     </tr>
@@ -627,7 +625,7 @@ async function verHistoricoManutencao(id, prefixo) {
             });
         }
     } catch(e) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erro ao carregar dados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Erro ao carregar dados.</td></tr>';
     }
 }
 </script>

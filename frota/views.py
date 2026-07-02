@@ -201,10 +201,17 @@ def api_retornar_manutencao(request):
                 san = 'Sanado' if item.get('sanado') else 'Não Realizado'
                 checklist_lines.append(f"- {mot}: {san}")
             
-            checklist_text = "\nResolução dos Motivos:\n" + "\n".join(checklist_lines) if checklist_lines else ""
-            retorno_text = f"[Retorno]: {observacoes}" if observacoes else "[Retorno]"
+            checklist_text = "Resolução dos Motivos:\n" + "\n".join(checklist_lines) if checklist_lines else ""
+            retorno_text = f"Observação de Retorno: {observacoes}" if observacoes else ""
             
-            historico.observacoes = (historico.observacoes or '') + f"\n{retorno_text}{checklist_text}"
+            parts = []
+            if checklist_text:
+                parts.append(checklist_text)
+            if retorno_text:
+                parts.append(retorno_text)
+                
+            final_note = "\n" + "\n\n".join(parts) if parts else ""
+            historico.observacoes = (historico.observacoes or '') + final_note
             historico.save()
 
         # Atualizar viatura
