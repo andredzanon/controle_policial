@@ -11,6 +11,7 @@ urlpatterns = [
     path('api/retornar-manutencao/', views.api_retornar_manutencao, name='api_retornar_manutencao'),
     path('api/historico-manutencao/<int:viatura_id>/', views.api_historico_manutencao, name='api_historico_manutencao'),
     path('api/manutencao-ativa/<int:viatura_id>/', views.api_manutencao_ativa, name='api_manutencao_ativa'),
+    path('api/relatorio-geral-texto/', views.api_relatorio_geral_texto, name='api_relatorio_geral_texto'),
     path('abertura-turno/', views.abertura_turno_view, name='abertura_turno'),
     path('api/viaturas-operantes/', views.api_viaturas_operantes, name='api_viaturas_operantes'),
     path('api/salvar-abertura-turno/', views.api_salvar_abertura_turno, name='api_salvar_abertura_turno'),

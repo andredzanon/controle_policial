@@ -405,3 +405,105 @@ def api_cancelar_abertura_turno(request):
         return JsonResponse({'status': 'sucesso', 'message': 'Abertura de turno cancelada com sucesso.', 'km_atual': v.km_atual})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@require_GET
+def api_relatorio_geral_texto(request):
+    try:
+        viaturas = Viatura.objects.all().order_by('prefixo')
+        
+        # Resumo quantitativo
+        autos_300 = sum(1 for v in viaturas if v.status == 'operando' and v.tipo != 'moto')
+        motos_300 = sum(1 for v in viaturas if v.status == 'operando' and v.tipo == 'moto')
+        
+        autos_baixar = sum(1 for v in viaturas if v.status == 'vai_baixar' and v.tipo != 'moto')
+        motos_baixar = sum(1 for v in viaturas if v.status == 'vai_baixar' and v.tipo == 'moto')
+        
+        autos_baixadas = sum(1 for v in viaturas if v.status in ['baixada_oficina', 'baixada_batalhao', 'baixada'] and v.tipo != 'moto')
+        motos_baixadas = sum(1 for v in viaturas if v.status in ['baixada_oficina', 'baixada_batalhao', 'baixada'] and v.tipo == 'moto')
+        
+        def format_summary(autos, motos, emoji, label):
+            auto_word = "Auto" if autos == 1 else "Autos"
+            moto_word = "Motocicleta" if motos == 1 else "Motocicletas"
+            return f"{emoji} {label}: {autos:02d} {auto_word} / {motos:02d} {moto_word}"
+            
+        summary_lines = [
+            format_summary(autos_300, motos_300, '🟢', 'VTRs em 300'),
+            format_summary(autos_baixar, motos_baixar, '🟡', 'VTRs que vão baixar'),
+            format_summary(autos_baixadas, motos_baixadas, '🔴', 'VTRs baixadas')
+        ]
+        
+        # Vehicle List
+        status_order = {'operando': 0, 'vai_baixar': 1, 'baixada_batalhao': 2, 'baixada_oficina': 3, 'baixada': 4}
+        def sort_key(v):
+            st_order = status_order.get(v.status, 99)
+            tp_order = 1 if v.tipo == 'moto' else 0
+            return (st_order, tp_order, v.prefixo)
+            
+        sorted_viaturas = sorted(viaturas, key=sort_key)
+        
+        list_lines = []
+        for idx, v in enumerate(sorted_viaturas, 1):
+            if v.status == 'operando':
+                emoji = '🟢'
+                suffix = ''
+            elif v.status == 'vai_baixar':
+                emoji = '🟡'
+                suffix = ''
+            else:
+                emoji = '🔴'
+                if v.status == 'baixada_batalhao':
+                    suffix = ' / BAIXADA BATALHÃO'
+                elif v.status == 'baixada_oficina':
+                    suffix = ' / BAIXADA OFICINA'
+                else:
+                    suffix = ' / BAIXADA'
+                    
+            tipo_display = 'Motocicleta' if v.tipo == 'moto' else 'Auto'
+            list_lines.append(f"{idx:02d}. {emoji} {v.prefixo} ({tipo_display}) - {v.modelo}{suffix}")
+            
+        # Maintenance Details
+        maint_lines = []
+        for v in sorted_viaturas:
+            if v.status != 'operando':
+                m = v.manutencoes.filter(concluida=False).last()
+                desc_list = []
+                if m:
+                    try:
+                        motivos = json.loads(m.motivo)
+                        if isinstance(motivos, list):
+                            desc_list.append(", ".join(motivos))
+                        else:
+                            desc_list.append(str(m.motivo))
+                    except Exception:
+                        if m.motivo:
+                            desc_list.append(m.motivo)
+                    if m.observacoes:
+                        desc_list.append(m.observacoes)
+                
+                desc_str = " - ".join(desc_list) if desc_list else "Sem motivos cadastrados."
+                maint_lines.append(f"VTR {v.prefixo} - {v.modelo.upper()}: - {desc_str}")
+                
+        # Date
+        meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
+        now = timezone.now()
+        data_str = f"Relatório: {now.day} {meses[now.month - 1]}. {now.year}"
+        
+        # Combine everything
+        sections = [
+            "RELATÓRIO GERAL DA VIATURAS PPTRAN:",
+            "----------------------------------",
+            "\n".join(summary_lines),
+            "----------------------------------",
+            "\n".join(list_lines),
+            "----------------------------------",
+            "🛠️ ALTERAÇÕES:\n\n• MANUTENÇÃO A SEREM REALIZADAS:\n\n" + "\n".join(maint_lines) if maint_lines else "🛠️ ALTERAÇÕES:\n\n• Nenhuma manutenção em andamento.",
+            "----------------------------------",
+            data_str
+        ]
+        
+        report_text = "\n".join(sections)
+        return JsonResponse({'text': report_text})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+

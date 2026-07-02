@@ -9,7 +9,7 @@
         <div class="btn-group">
             <button class="btn btn-primary" onclick="abrirModalViatura()"><i class="bi bi-car-front"></i> Cadastrar Nova Viatura</button>
             <a href="{% url 'frota:abertura_turno' %}" class="btn btn-outline-primary"><i class="bi bi-clock-history"></i> Abrir Turno</a>
-            <button class="btn btn-outline-secondary">Relatórios</button>
+            <button class="btn btn-outline-secondary" onclick="abrirModalRelatorioGeral()"><i class="bi bi-file-earmark-text"></i> Relatórios</button>
         </div>
     </div>
 </div>
@@ -328,6 +328,28 @@
     </div>
 </div>
 
+<!-- Modal Relatório Geral -->
+<div class="modal fade" id="modalRelatorioGeral" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title"><i class="bi bi-file-earmark-text"></i> Relatório Geral da Frota</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-secondary">Abaixo está a visualização do relatório que será enviado por WhatsApp.</p>
+                <div class="mb-3">
+                    <textarea class="form-control bg-dark text-white border-secondary font-monospace" id="rg_texto_preview" rows="18" readonly style="font-size: 0.85rem; line-height: 1.4;"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-success text-dark fw-bold" onclick="enviarRelatorioGeralWhatsApp()"><i class="bi bi-whatsapp"></i> Enviar pelo WhatsApp</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Histórico de Manutenção -->
 <div class="modal fade" id="modalHistorico" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -369,6 +391,35 @@ const modalViatura = new bootstrap.Modal(document.getElementById('modalViatura')
 const modalManutencao = new bootstrap.Modal(document.getElementById('modalManutencao'));
 const modalHistorico = new bootstrap.Modal(document.getElementById('modalHistorico'));
 const modalRetorno = new bootstrap.Modal(document.getElementById('modalRetorno'));
+const modalRelatorioGeral = new bootstrap.Modal(document.getElementById('modalRelatorioGeral'));
+
+async function abrirModalRelatorioGeral() {
+    let preview = document.getElementById('rg_texto_preview');
+    preview.value = "Carregando relatório...";
+    modalRelatorioGeral.show();
+
+    try {
+        let response = await fetch("{% url 'frota:api_relatorio_geral_texto' %}");
+        let result = await response.json();
+        if (response.ok) {
+            preview.value = result.text;
+        } else {
+            preview.value = "Erro ao gerar relatório: " + result.error;
+        }
+    } catch(e) {
+        preview.value = "Erro de conexão ao carregar relatório.";
+    }
+}
+
+function enviarRelatorioGeralWhatsApp() {
+    let text = document.getElementById('rg_texto_preview').value;
+    if (!text || text.startsWith("Carregando") || text.startsWith("Erro")) {
+        alert("O relatório não está pronto para ser enviado.");
+        return;
+    }
+    let url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
+    window.open(url, '_blank');
+}
 
 let motivosSelecionados = [];
 
