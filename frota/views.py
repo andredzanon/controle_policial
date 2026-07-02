@@ -5,7 +5,9 @@ from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 # pyrefly: ignore [missing-import]
 from django.contrib.auth.decorators import login_required
+# pyrefly: ignore [missing-import]
 from django.views.decorators.http import require_POST, require_GET
+# pyrefly: ignore [missing-import]
 from django.utils import timezone
 from .models import Viatura, HistoricoManutencao, AberturaTurnoViatura, Motorista
 
@@ -180,6 +182,7 @@ def api_retornar_manutencao(request):
         data = json.loads(request.body)
         viatura_id = data.get('viatura_id')
         observacoes = data.get('observacoes', '')
+        checklist = data.get('checklist', [])
 
         v = get_object_or_404(Viatura, pk=viatura_id)
         if v.status not in [Viatura.StatusViatura.BAIXADA_OFICINA, Viatura.StatusViatura.BAIXADA_BATALHAO, Viatura.StatusViatura.VAI_BAIXAR, 'baixada']:
@@ -190,8 +193,18 @@ def api_retornar_manutencao(request):
         if historico:
             historico.concluida = True
             historico.data_retorno = timezone.now()
-            if observacoes:
-                historico.observacoes = (historico.observacoes or '') + f"\n[Retorno]: {observacoes}"
+            
+            # Format checklist details
+            checklist_lines = []
+            for item in checklist:
+                mot = item.get('motivo')
+                san = 'Sanado' if item.get('sanado') else 'Não Sanado'
+                checklist_lines.append(f"- {mot}: {san}")
+            
+            checklist_text = "\nResolução dos Motivos:\n" + "\n".join(checklist_lines) if checklist_lines else ""
+            retorno_text = f"[Retorno]: {observacoes}" if observacoes else "[Retorno]"
+            
+            historico.observacoes = (historico.observacoes or '') + f"\n{retorno_text}{checklist_text}"
             historico.save()
 
         # Atualizar viatura
@@ -309,6 +322,7 @@ def api_viaturas_operantes(request):
         traceback.print_exc()
         return JsonResponse({'error': str(e)}, status=500)
 
+# pyrefly: ignore [missing-import]
 from django.db import transaction
 
 @login_required

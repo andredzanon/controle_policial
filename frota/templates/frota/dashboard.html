@@ -546,8 +546,8 @@ async function abrirModalRetorno(id, prefixo) {
             result.motivos.forEach((mot, idx) => {
                 checklist.innerHTML += `
                     <div class="form-check mb-2">
-                        <input class="form-check-input r-motive-check" type="checkbox" id="chk_retorno_${idx}" value="${mot}" required>
-                        <label class="form-check-label text-white small" for="chk_retorno_${idx}">
+                        <input class="form-check-input r-motive-check" type="checkbox" id="chk_retorno_${idx}" value="${mot}">
+                        <label class="form-check-label text-white small select-none" for="chk_retorno_${idx}">
                             ${mot} <span class="text-success fw-bold">(Sanado)</span>
                         </label>
                     </div>
@@ -565,16 +565,14 @@ async function salvarRetorno() {
     let id = document.getElementById('r_viatura_id').value;
     let obs = document.getElementById('r_obs').value;
 
+    let checklist = [];
     let checks = document.querySelectorAll('.r-motive-check');
-    let allChecked = true;
     checks.forEach(c => {
-        if (!c.checked) allChecked = false;
+        checklist.push({
+            motivo: c.value,
+            sanado: c.checked
+        });
     });
-
-    if (checks.length > 0 && !allChecked) {
-        alert("Por favor, marque todos os motivos como sanados para retornar o veículo à operação.");
-        return;
-    }
 
     try {
         let response = await fetch("{% url 'frota:api_retornar_manutencao' %}", {
@@ -585,7 +583,8 @@ async function salvarRetorno() {
             },
             body: JSON.stringify({
                 viatura_id: id,
-                observacoes: obs
+                observacoes: obs,
+                checklist: checklist
             })
         });
         let result = await response.json();
