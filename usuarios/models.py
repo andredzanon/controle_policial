@@ -12,6 +12,8 @@ class Usuario(AbstractUser):
         choices=NivelAcesso.choices,
         default=NivelAcesso.OPERADOR
     )
+    
+    senha_provisoria = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.username} - {self.get_nivel_display()}"

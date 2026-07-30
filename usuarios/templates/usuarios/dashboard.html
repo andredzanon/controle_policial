@@ -87,6 +87,21 @@
                             {% endif %}
                         </select>
                     </div>
+                    
+                    <hr id="linhaDivisoria" style="display:none;">
+                    <div id="blocoAlterarSenha" style="display:none;">
+                        <h6 class="fw-bold mb-2">Redefinir Senha do Usuário</h6>
+                        <div class="mb-2">
+                            <input type="password" class="form-control" id="u_nova_senha" placeholder="Nova senha (deixe em branco se não quiser mudar)">
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="u_senha_provisoria">
+                            <label class="form-check-label text-warning" for="u_senha_provisoria">
+                                <i class="bi bi-exclamation-triangle"></i> Forçar troca no primeiro login (Senha Provisória)
+                            </label>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-warning w-100" onclick="salvarSenhaAdmin()">Mudar Senha e Enviar via WhatsApp</button>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -115,9 +130,18 @@ function abrirModalUsuario(id='', login='', nome='', nivel='operador') {
     if(id) {
         document.getElementById('senha_hint').style.display = 'none';
         document.getElementById('u_login').readOnly = true; // Evitar trocar login na edição para não quebrar vínculos (opcional)
+        
+        // Show password reset block only on edit
+        document.getElementById('linhaDivisoria').style.display = 'block';
+        document.getElementById('blocoAlterarSenha').style.display = 'block';
+        document.getElementById('u_nova_senha').value = '';
+        document.getElementById('u_senha_provisoria').checked = false;
     } else {
         document.getElementById('senha_hint').style.display = 'block';
         document.getElementById('u_login').readOnly = false;
+        
+        document.getElementById('linhaDivisoria').style.display = 'none';
+        document.getElementById('blocoAlterarSenha').style.display = 'none';
     }
     
     modalUsuario.show();
@@ -154,6 +178,43 @@ async function salvarUsuario() {
         }
     } catch(e) { 
         alert("Erro de conexão"); 
+    }
+}
+
+async function salvarSenhaAdmin() {
+    let u_id = document.getElementById('u_id').value;
+    let username = document.getElementById('u_login').value;
+    let nova_senha = document.getElementById('u_nova_senha').value;
+    let provisoria = document.getElementById('u_senha_provisoria').checked;
+    
+    if(!u_id || !nova_senha) {
+        alert("Para mudar a senha, digite a nova senha no campo."); return;
+    }
+    
+    try {
+        let res = await fetch("{% url 'usuarios:api_alterar_senha_usuario' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({id: u_id, nova_senha: nova_senha, provisoria: provisoria})
+        });
+        let data = await res.json();
+        
+        if(res.ok) {
+            modalUsuario.hide();
+            // Utiliza a função global declarada em base.html para chamar o modal
+            if (typeof prepararWhatsAppSenha === 'function') {
+                prepararWhatsAppSenha(username, nova_senha);
+            } else {
+                alert("Senha alterada! Aviso de WhatsApp não disponível.");
+            }
+        } else {
+            alert(data.error);
+        }
+    } catch(e) {
+        alert('Erro de conexão.');
     }
 }
 </script>
