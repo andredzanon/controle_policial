@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 # pyrefly: ignore [missing-import]
 from django.views.decorators.http import require_POST, require_GET
+from django.http import JsonResponse, HttpResponseForbidden
 # pyrefly: ignore [missing-import]
 from django.utils import timezone
 from .models import Viatura, HistoricoManutencao, AberturaTurnoViatura, Motorista
@@ -74,6 +75,9 @@ def dashboard(request):
 @login_required
 @require_POST
 def api_salvar_viatura(request):
+    if request.user.nivel == 'operador':
+        return JsonResponse({'error': 'Acesso negado.'}, status=403)
+        
     try:
         data = json.loads(request.body)
         viatura_id = data.get('id')
@@ -125,6 +129,9 @@ def api_salvar_viatura(request):
 @login_required
 @require_POST
 def api_enviar_manutencao(request):
+    if request.user.nivel == 'operador':
+        return JsonResponse({'error': 'Acesso negado.'}, status=403)
+
     try:
         data = json.loads(request.body)
         viatura_id = data.get('viatura_id')
@@ -178,6 +185,9 @@ def api_enviar_manutencao(request):
 @login_required
 @require_POST
 def api_retornar_manutencao(request):
+    if request.user.nivel == 'operador':
+        return JsonResponse({'error': 'Acesso negado.'}, status=403)
+
     try:
         data = json.loads(request.body)
         viatura_id = data.get('viatura_id')
@@ -409,6 +419,9 @@ def api_cancelar_abertura_turno(request):
 @login_required
 @require_GET
 def api_relatorio_geral_texto(request):
+    if request.user.nivel == 'operador':
+        return JsonResponse({'error': 'Acesso negado.'}, status=403)
+
     try:
         viaturas = Viatura.objects.all().order_by('prefixo')
         

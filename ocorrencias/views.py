@@ -1,6 +1,6 @@
 import json
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.db import transaction
@@ -492,10 +492,15 @@ from django.db.models import Sum, Count
 
 @login_required
 def estatisticas_view(request):
+    if request.user.nivel == 'operador':
+        return HttpResponseForbidden("Acesso restrito.")
     return render(request, 'ocorrencias/estatisticas.html')
 
 @login_required
 def api_estatisticas(request):
+    if request.user.nivel == 'operador':
+        return JsonResponse({'error': 'Acesso negado.'}, status=403)
+
     tipo_filtro = request.GET.get('tipo', 'dia')
     
     if tipo_filtro == 'dia':

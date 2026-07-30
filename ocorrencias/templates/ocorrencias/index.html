@@ -10,7 +10,9 @@
         <div class="btn-group">
             <a href="{% url 'ocorrencias:index' %}" class="btn btn-outline-primary active">Registrar</a>
             <a href="{% url 'ocorrencias:historico' %}" class="btn btn-outline-secondary">Histórico</a>
+            {% if user.nivel != 'operador' %}
             <a href="{% url 'ocorrencias:estatisticas' %}" class="btn btn-outline-secondary">Estatísticas</a>
+            {% endif %}
         </div>
     </div>
 </div>

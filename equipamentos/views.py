@@ -1,6 +1,6 @@
 import json
 from django.shortcuts import render, get_object_or_404
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.db.models import Count, Q
@@ -8,6 +8,9 @@ from .models import Equipamento
 
 @login_required
 def dashboard(request):
+    if request.user.nivel == 'operador':
+        return HttpResponseForbidden("Acesso restrito.")
+        
     armamentos = Equipamento.objects.filter(tipo__in=['arma', 'municao']).order_by('nome')
     outros = Equipamento.objects.exclude(tipo__in=['arma', 'municao']).order_by('tipo', 'nome')
 
@@ -45,6 +48,9 @@ def dashboard(request):
 @login_required
 @require_POST
 def api_salvar_equipamento(request):
+    if request.user.nivel == 'operador':
+        return JsonResponse({'error': 'Acesso negado.'}, status=403)
+
     try:
         data = json.loads(request.body)
         e_id = data.get('id')
@@ -92,6 +98,9 @@ def api_salvar_equipamento(request):
 @login_required
 @require_POST
 def api_excluir_equipamento(request):
+    if request.user.nivel == 'operador':
+        return JsonResponse({'error': 'Acesso negado.'}, status=403)
+
     try:
         data = json.loads(request.body)
         e_id = data.get('id')

@@ -37,9 +37,13 @@
                             {% endif %}
                         </td>
                         <td class="text-end">
+                            {% if p.nivel != 'admin_master' or user.nivel == 'admin_master' %}
                             <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalUsuario({{ p.pk }}, '{{ p.username }}', '{{ p.first_name }}', '{{ p.nivel }}')" title="Editar">
                                 <i class="bi bi-pencil"></i> Editar
                             </button>
+                            {% else %}
+                            <span class="text-muted small">Restrito</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}

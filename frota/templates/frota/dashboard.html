@@ -7,9 +7,13 @@
     <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
         <h3 class="mb-0">Controle da Frota e Manutenção</h3>
         <div class="btn-group">
+            {% if user.nivel != 'operador' %}
             <button class="btn btn-primary" onclick="abrirModalViatura()"><i class="bi bi-car-front"></i> Cadastrar Nova Viatura</button>
+            {% endif %}
             <a href="{% url 'frota:abertura_turno' %}" class="btn btn-outline-primary"><i class="bi bi-clock-history"></i> Abrir Turno</a>
+            {% if user.nivel != 'operador' %}
             <button class="btn btn-outline-secondary" onclick="abrirModalRelatorioGeral()"><i class="bi bi-file-earmark-text"></i> Relatórios</button>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -146,13 +150,16 @@
 
                 <div class="mt-auto pt-3 border-top">
                     <div class="d-flex justify-content-between gap-1 flex-wrap">
+                        {% if user.nivel != 'operador' %}
                         <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalViatura({{ viatura.pk }}, '{{ viatura.prefixo }}', '{{ viatura.placa }}', '{{ viatura.marca }}', '{{ viatura.modelo }}', '{{ viatura.tipo }}', {{ viatura.km_atual }}, {{ viatura.limite_troca_oleo }}, {{ viatura.has_open_turno|yesno:"true,false" }}, '{{ viatura.status }}')" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </button>
+                        {% endif %}
                         <button class="btn btn-sm btn-outline-info" onclick="verHistoricoManutencao({{ viatura.pk }}, '{{ viatura.prefixo }}')" title="Histórico de Manutenção">
                             <i class="bi bi-clock-history"></i> Histórico
                         </button>
                         
+                        {% if user.nivel != 'operador' %}
                         {% if viatura.status == 'vai_baixar' or viatura.status == 'baixada_oficina' or viatura.status == 'baixada_batalhao' or viatura.status == 'baixada' %}
                             <button class="btn btn-sm btn-warning" onclick="abrirModalManutencao({{ viatura.pk }}, '{{ viatura.prefixo }}', true)">
                                 <i class="bi bi-wrench"></i> Manutenção
@@ -164,6 +171,7 @@
                             <button class="btn btn-sm btn-warning" onclick="{% if viatura.has_open_turno %}alert('Não é possível abrir manutenção para esta viatura pois ela possui um turno em andamento.');{% else %}abrirModalManutencao({{ viatura.pk }}, '{{ viatura.prefixo }}', false){% endif %}">
                                 <i class="bi bi-wrench"></i> Manutenção
                             </button>
+                        {% endif %}
                         {% endif %}
                     </div>
                 </div>

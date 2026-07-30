@@ -38,9 +38,11 @@
                         <li class="nav-item">
                             <a class="nav-link {% if request.resolver_match.app_name == 'frota' %}active fw-bold text-white bg-dark rounded px-3{% else %}px-3{% endif %}" href="{% url 'frota:dashboard' %}"><i class="bi bi-car-front me-1"></i> Frota</a>
                         </li>
+                        {% if user.nivel in 'admin_master,administrador' or user.is_superuser %}
                         <li class="nav-item">
                             <a class="nav-link {% if request.resolver_match.app_name == 'equipamentos' %}active fw-bold text-white bg-dark rounded px-3{% else %}px-3{% endif %}" href="{% url 'equipamentos:dashboard' %}"><i class="bi bi-tools me-1"></i> Equipamentos</a>
                         </li>
+                        {% endif %}
                         {% if user.nivel in 'admin_master,administrador' or user.is_superuser %}
                         <li class="nav-item">
                             <a class="nav-link {% if request.resolver_match.app_name == 'usuarios' %}active fw-bold text-white bg-dark rounded px-3{% else %}px-3{% endif %}" href="{% url 'usuarios:dashboard' %}"><i class="bi bi-people me-1"></i> Usuários</a>
