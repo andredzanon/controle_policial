@@ -1,6 +1,12 @@
-/* Custom styles to refine the Bootstrap default look */
+/* Custom styles to refine the Bootstrap default look and apply 17º BPM PPTRAN Theme */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.font-montserrat {
+    font-family: 'Montserrat', sans-serif;
 }
 
 /* Ensure the app takes at least the full viewport height */
@@ -14,54 +20,185 @@ main {
     flex: 1;
 }
 
-/* Adjustments for the dark theme to make it slightly darker blueish gray with gold accents */
-[data-bs-theme="dark"] {
-    --bs-body-bg: #121820;
-    --bs-body-color: #e5cb93; /* Smooth light gold for readability */
-    --bs-tertiary-bg: #1a2332;
-    --bs-headings-color: #c19846; /* Headings in reference gold */
-    --bs-link-color: #c19846;
-    --bs-link-hover-color: #e5cb93;
+/* Color Tokens based on PPTRAN Emblem (Tactical Dark Navy & Metallic Gold) */
+:root {
+    --pptran-gold: #c5a059;
+    --pptran-gold-hover: #d4af37;
+    --pptran-gold-dark: #8c6d2d;
+    --pptran-gold-subtle: rgba(197, 160, 89, 0.3);
+    --pptran-navy-dark: #0a1118;
+    --pptran-navy-card: #121b27;
+    --pptran-blue-accent: #1e2e42;
 }
 
-/* Force headings, brands, active links, and white texts to reference gold (#c19846) in dark mode */
+/* Navbar Logo & Brand Styling */
+.navbar-logo {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0px 2px 5px rgba(0, 0, 0, 0.6));
+    transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+.navbar-brand:hover .navbar-logo {
+    transform: scale(1.06);
+    filter: drop-shadow(0px 4px 10px rgba(197, 160, 89, 0.4));
+}
+
+.brand-title {
+    font-family: 'Montserrat', sans-serif;
+    letter-spacing: 0.5px;
+    font-size: 1.05rem;
+    color: var(--pptran-gold) !important;
+}
+
+.brand-subtitle {
+    font-size: 0.65rem;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+/* Theme Adjustments for Dark Mode */
+[data-bs-theme="dark"] {
+    --bs-body-bg: var(--pptran-navy-dark);
+    --bs-body-color: #e2d7be;
+    --bs-tertiary-bg: #111a26;
+    --bs-headings-color: var(--pptran-gold);
+    --bs-link-color: var(--pptran-gold);
+    --bs-link-hover-color: var(--pptran-gold-hover);
+}
+
 [data-bs-theme="dark"] h1,
 [data-bs-theme="dark"] h2,
 [data-bs-theme="dark"] h3,
 [data-bs-theme="dark"] h4,
 [data-bs-theme="dark"] h5,
 [data-bs-theme="dark"] h6,
-[data-bs-theme="dark"] .h1,
-[data-bs-theme="dark"] .h2,
-[data-bs-theme="dark"] .h3,
-[data-bs-theme="dark"] .h4,
-[data-bs-theme="dark"] .h5,
-[data-bs-theme="dark"] .h6,
 [data-bs-theme="dark"] .navbar-brand,
 [data-bs-theme="dark"] .card-title,
 [data-bs-theme="dark"] .table th,
 [data-bs-theme="dark"] .text-white,
-[data-bs-theme="dark"] .text-light,
-[data-bs-theme="dark"] .text-body-emphasis,
-[data-bs-theme="dark"] .modal-title {
-    color: #c19846 !important;
+[data-bs-theme="dark"] .text-gold {
+    color: var(--pptran-gold) !important;
+}
+
+/* Utility classes */
+.text-gold {
+    color: var(--pptran-gold) !important;
+}
+
+.border-gold-subtle {
+    border-color: var(--pptran-gold-subtle) !important;
+}
+
+.btn-gold {
+    background: linear-gradient(135deg, #c5a059 0%, #9e7b36 100%);
+    color: #080d14 !important;
+    border: 1px solid #d4af37;
+    font-weight: 700;
+    transition: all 0.25s ease;
+}
+
+.btn-gold:hover, .btn-gold:focus {
+    background: linear-gradient(135deg, #d4af37 0%, #b89143 100%);
+    color: #05080c !important;
+    box-shadow: 0 0 15px rgba(197, 160, 89, 0.45);
+    transform: translateY(-1px);
 }
 
 /* Custom styles for active links and elements */
 [data-bs-theme="dark"] .nav-link.active {
-    color: #c19846 !important;
-    background-color: #1a2332 !important;
+    color: var(--pptran-gold) !important;
+    background-color: #1a2533 !important;
+    border-bottom: 2px solid var(--pptran-gold);
 }
 
 [data-bs-theme="dark"] .bg-dark {
-    background-color: #1a2332 !important;
+    background-color: #111a26 !important;
 }
 
-/* Secondary texts to a softer gold */
+/* Secondary texts */
 [data-bs-theme="dark"] .text-muted,
 [data-bs-theme="dark"] .text-body-secondary,
 [data-bs-theme="dark"] .text-secondary {
-    color: #b59b63 !important;
+    color: #a49678 !important;
+}
+
+/* Login Page Theme */
+.login-wrapper {
+    min-height: calc(100vh - 140px);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at center, #162335 0%, #0a1118 75%);
+    border-radius: 8px;
+}
+
+.login-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 0;
+    width: 600px;
+    max-width: 90vw;
+}
+
+.login-watermark img {
+    width: 100%;
+    height: auto;
+}
+
+.login-container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 480px;
+    padding: 1rem;
+}
+
+.login-card {
+    background: linear-gradient(145deg, rgba(18, 27, 39, 0.95) 0%, rgba(10, 17, 24, 0.98) 100%);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--pptran-gold-subtle) !important;
+    border-top: 4px solid var(--pptran-gold) !important;
+    border-radius: 12px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 25px rgba(197, 160, 89, 0.12);
+}
+
+.login-logo-img {
+    height: 120px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 18px rgba(197, 160, 89, 0.35));
+    transition: transform 0.3s ease;
+}
+
+.login-card:hover .login-logo-img {
+    transform: scale(1.03);
+    filter: drop-shadow(0 0 22px rgba(197, 160, 89, 0.5));
+}
+
+.login-title {
+    font-size: 1.1rem;
+    color: #ffffff !important;
+    letter-spacing: 0.8px;
+}
+
+.login-subtitle {
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+}
+
+.login-card .form-control:focus {
+    background-color: #0b131e !important;
+    border-color: var(--pptran-gold) !important;
+    box-shadow: 0 0 0 0.25rem rgba(197, 160, 89, 0.25) !important;
+    color: #ffffff !important;
 }
 
 /* Accordion custom styling for mobile */
@@ -69,3 +206,4 @@ main {
     box-shadow: none;
     border-color: rgba(0,0,0,.125);
 }
+
