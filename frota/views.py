@@ -293,6 +293,8 @@ def api_manutencao_ativa(request, viatura_id):
 
 @login_required
 def abertura_turno_view(request):
+    if request.user.nivel == 'operador':
+        return HttpResponseForbidden("Acesso restrito.")
     return render(request, 'frota/abertura_turno.html')
 
 @login_required
@@ -345,6 +347,9 @@ from django.db import transaction
 @login_required
 @require_POST
 def api_salvar_abertura_turno(request):
+    if request.user.nivel == 'operador':
+        return JsonResponse({'error': 'Acesso negado.'}, status=403)
+        
     try:
         import re
         payload = json.loads(request.body)

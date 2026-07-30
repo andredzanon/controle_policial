@@ -9,9 +9,7 @@
         <div class="btn-group">
             {% if user.nivel != 'operador' %}
             <button class="btn btn-primary" onclick="abrirModalViatura()"><i class="bi bi-car-front"></i> Cadastrar Nova Viatura</button>
-            {% endif %}
             <a href="{% url 'frota:abertura_turno' %}" class="btn btn-outline-primary"><i class="bi bi-clock-history"></i> Abrir Turno</a>
-            {% if user.nivel != 'operador' %}
             <button class="btn btn-outline-secondary" onclick="abrirModalRelatorioGeral()"><i class="bi bi-file-earmark-text"></i> Relatórios</button>
             {% endif %}
         </div>
