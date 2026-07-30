@@ -1,70 +1,248 @@
 {% extends "base.html" %}
 
-{% block title %}Equipamentos - SJP Police System{% endblock %}
+{% block title %}Equipamentos - 17º BPM PPTRAN{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
-        <h3 class="mb-0">Controle de Equipamentos e Patrimônio</h3>
-        <button class="btn btn-primary" onclick="abrirModalEquipamento()"><i class="bi bi-box-seam"></i> Cadastrar Equipamento</button>
+        <h3 class="mb-0"><i class="bi bi-tools me-2"></i>Controle de Equipamentos e Patrimônio</h3>
+        <button class="btn btn-gold" onclick="abrirModalEquipamento()"><i class="bi bi-box-seam me-1"></i> Cadastrar Equipamento</button>
     </div>
 </div>
-
-<div class="card shadow-sm mb-4 border-0">
+<!-- ===== RELATÓRIO GERAL DE ARMAMENTOS ===== -->
+{% if armamentos_resumo %}
+<div class="card shadow-sm mb-4 border-0 relatorio-geral-card">
     <div class="card-body p-0">
+        <div class="relatorio-header px-3 py-2">
+            <span class="fw-bold text-gold font-montserrat text-uppercase">
+                <i class="bi bi-clipboard-data me-2"></i>Relatório Geral
+            </span>
+        </div>
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-dark">
+            <table class="table table-sm align-middle mb-0 relatorio-geral-table">
+                <thead>
                     <tr>
-                        <th>Patrimônio</th>
-                        <th>Nome do Equipamento</th>
-                        <th>Tipo</th>
-                        <th>Status</th>
-                        <th>Localização/Obs</th>
-                        <th class="text-end">Ações</th>
+                        <th class="text-uppercase small">Tipo</th>
+                        <th class="text-center">
+                            <span class="relatorio-dot relatorio-dot-green"></span>
+                        </th>
+                        <th class="text-center">
+                            <span class="relatorio-dot relatorio-dot-red"></span>
+                        </th>
+                        <th class="text-center text-uppercase small">Total</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for e in equipamentos %}
+                    {% for r in armamentos_resumo %}
                     <tr>
-                        <td class="fw-bold">{{ e.numero_patrimonio }}</td>
-                        <td>{{ e.nome }}</td>
-                        <td>
-                            {% if e.tipo == 'arma' %}<i class="bi bi-crosshair me-1"></i>
-                            {% elif e.tipo == 'municao' %}<i class="bi bi-bullseye me-1"></i>
-                            {% elif e.tipo == 'colete' %}<i class="bi bi-shield me-1"></i>
-                            {% elif e.tipo == 'celular' %}<i class="bi bi-phone me-1"></i>
-                            {% elif e.tipo == 'algemas' %}<i class="bi bi-link me-1"></i>
-                            {% elif e.tipo == 'expediente' %}<i class="bi bi-paperclip me-1"></i>
-                            {% else %}<i class="bi bi-cone-striped me-1"></i>{% endif %}
-                            {{ e.get_tipo_display }}
-                        </td>
-                        <td>
-                            {% if e.status == 'operante' %}
-                                <span class="badge bg-success">Operante</span>
-                            {% elif e.status == 'defeito' %}
-                                <span class="badge bg-danger">Com Defeito</span>
-                            {% else %}
-                                <span class="badge bg-warning text-dark">Em Manutenção</span>
-                            {% endif %}
-                        </td>
-                        <td class="small text-secondary">
-                            {% if e.localizacao_atual %}<strong>Local:</strong> {{ e.localizacao_atual }}<br>{% endif %}
-                            {% if e.observacoes %}<strong>Obs:</strong> {{ e.observacoes }}{% endif %}
-                        </td>
-                        <td class="text-end">
-                            <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalEquipamento({{ e.pk }}, '{{ e.numero_patrimonio|escapejs }}', '{{ e.nome|escapejs }}', '{{ e.tipo }}', '{{ e.status }}', '{{ e.localizacao_atual|escapejs|default:"" }}', '{{ e.observacoes|escapejs|default:"" }}')" title="Editar">
-                                <i class="bi bi-pencil"></i> Editar
-                            </button>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center text-secondary py-4">Nenhum equipamento cadastrado.</td>
+                        <td class="fw-semibold text-uppercase">{{ r.nome }}</td>
+                        <td class="text-center fw-bold">{{ r.operante }}</td>
+                        <td class="text-center fw-bold">{{ r.baixado }}</td>
+                        <td class="text-center fw-bold text-gold">{{ r.total }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot>
+                    <tr class="relatorio-total-row">
+                        <td colspan="3" class="text-end fw-bold text-uppercase text-gold pe-3">Total de Armamentos</td>
+                        <td class="text-center fw-bold fs-5 text-gold">{{ armamentos|length }}</td>
+                    </tr>
+                </tfoot>
             </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ===== SECTION 1: ARMAMENTOS ===== -->
+<div class="card shadow-sm mb-4 border-0">
+    <div class="card-header p-0 border-0">
+        <button class="btn w-100 text-start d-flex align-items-center justify-content-between p-3 collapsed"
+                type="button" data-bs-toggle="collapse" data-bs-target="#collapseArmamentos"
+                aria-expanded="false" aria-controls="collapseArmamentos"
+                id="btnCollapseArmamentos">
+            <span class="fw-bold fs-5 text-gold">
+                <i class="bi bi-crosshair2 me-2"></i>Armamentos e Munições
+                <span class="badge bg-dark border border-gold-subtle ms-2 fs-6">{{ armamentos|length }}</span>
+            </span>
+            <i class="bi bi-chevron-down collapse-icon"></i>
+        </button>
+    </div>
+    <div class="collapse" id="collapseArmamentos">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Patrimônio</th>
+                            <th>Nome do Equipamento</th>
+                            <th>Tipo</th>
+                            <th>Status</th>
+                            <th>Localização/Obs</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in armamentos %}
+                        <tr>
+                            <td class="fw-bold">{{ e.numero_patrimonio }}</td>
+                            <td>{{ e.nome }}</td>
+                            <td>
+                                {% if e.tipo == 'arma' %}<i class="bi bi-crosshair me-1"></i>
+                                {% elif e.tipo == 'municao' %}<i class="bi bi-bullseye me-1"></i>
+                                {% endif %}
+                                {{ e.get_tipo_display }}
+                            </td>
+                            <td>
+                                {% if e.status == 'operante' %}
+                                    <span class="badge bg-success">Operante</span>
+                                {% elif e.status == 'defeito' %}
+                                    <span class="badge bg-danger">Com Defeito</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Em Manutenção</span>
+                                {% endif %}
+                            </td>
+                            <td class="small text-secondary">
+                                {% if e.localizacao_atual %}<strong>Local:</strong> {{ e.localizacao_atual }}<br>{% endif %}
+                                {% if e.observacoes %}<strong>Obs:</strong> {{ e.observacoes }}{% endif %}
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalEquipamento({{ e.pk }}, '{{ e.numero_patrimonio|escapejs }}', '{{ e.nome|escapejs }}', '{{ e.tipo }}', '{{ e.status }}', '{{ e.localizacao_atual|escapejs|default:"" }}', '{{ e.observacoes|escapejs|default:"" }}')" title="Editar">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger ms-1" onclick="excluirEquipamento({{ e.pk }}, '{{ e.nome|escapejs }}')" title="Excluir">
+                                    <i class="bi bi-trash3"></i> Excluir
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-secondary py-4">Nenhum armamento cadastrado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== RELATÓRIO GERAL DE EQUIPAMENTOS ===== -->
+{% if equipamentos_resumo %}
+<div class="card shadow-sm mb-4 border-0 relatorio-geral-card">
+    <div class="card-body p-0">
+        <div class="relatorio-header px-3 py-2">
+            <span class="fw-bold text-gold font-montserrat text-uppercase">
+                <i class="bi bi-clipboard-data me-2"></i>Relatório Geral — Equipamentos
+            </span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0 relatorio-geral-table">
+                <thead>
+                    <tr>
+                        <th class="text-uppercase small">Tipo</th>
+                        <th class="text-center">
+                            <span class="relatorio-dot relatorio-dot-green"></span>
+                        </th>
+                        <th class="text-center">
+                            <span class="relatorio-dot relatorio-dot-red"></span>
+                        </th>
+                        <th class="text-center text-uppercase small">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in equipamentos_resumo %}
+                    <tr>
+                        <td class="fw-semibold text-uppercase">{{ r.tipo_display }}</td>
+                        <td class="text-center fw-bold">{{ r.operante }}</td>
+                        <td class="text-center fw-bold">{{ r.baixado }}</td>
+                        <td class="text-center fw-bold text-gold">{{ r.total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="relatorio-total-row">
+                        <td colspan="3" class="text-end fw-bold text-uppercase text-gold pe-3">Total de Equipamentos</td>
+                        <td class="text-center fw-bold fs-5 text-gold">{{ outros|length }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ===== SECTION 2: OUTROS EQUIPAMENTOS ===== -->
+<div class="card shadow-sm mb-4 border-0">
+    <div class="card-header p-0 border-0">
+        <button class="btn w-100 text-start d-flex align-items-center justify-content-between p-3 collapsed"
+                type="button" data-bs-toggle="collapse" data-bs-target="#collapseOutros"
+                aria-expanded="false" aria-controls="collapseOutros"
+                id="btnCollapseOutros">
+            <span class="fw-bold fs-5 text-gold">
+                <i class="bi bi-box-seam me-2"></i>Outros Equipamentos
+                <span class="badge bg-dark border border-gold-subtle ms-2 fs-6">{{ outros|length }}</span>
+            </span>
+            <i class="bi bi-chevron-down collapse-icon"></i>
+        </button>
+    </div>
+    <div class="collapse" id="collapseOutros">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Patrimônio</th>
+                            <th>Nome do Equipamento</th>
+                            <th>Tipo</th>
+                            <th>Status</th>
+                            <th>Localização/Obs</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in outros %}
+                        <tr>
+                            <td class="fw-bold">{{ e.numero_patrimonio }}</td>
+                            <td>{{ e.nome }}</td>
+                            <td>
+                                {% if e.tipo == 'colete' %}<i class="bi bi-shield me-1"></i>
+                                {% elif e.tipo == 'celular' %}<i class="bi bi-phone me-1"></i>
+                                {% elif e.tipo == 'algemas' %}<i class="bi bi-link me-1"></i>
+                                {% elif e.tipo == 'expediente' %}<i class="bi bi-paperclip me-1"></i>
+                                {% else %}<i class="bi bi-cone-striped me-1"></i>{% endif %}
+                                {{ e.get_tipo_display }}
+                            </td>
+                            <td>
+                                {% if e.status == 'operante' %}
+                                    <span class="badge bg-success">Operante</span>
+                                {% elif e.status == 'defeito' %}
+                                    <span class="badge bg-danger">Com Defeito</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Em Manutenção</span>
+                                {% endif %}
+                            </td>
+                            <td class="small text-secondary">
+                                {% if e.localizacao_atual %}<strong>Local:</strong> {{ e.localizacao_atual }}<br>{% endif %}
+                                {% if e.observacoes %}<strong>Obs:</strong> {{ e.observacoes }}{% endif %}
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalEquipamento({{ e.pk }}, '{{ e.numero_patrimonio|escapejs }}', '{{ e.nome|escapejs }}', '{{ e.tipo }}', '{{ e.status }}', '{{ e.localizacao_atual|escapejs|default:"" }}', '{{ e.observacoes|escapejs|default:"" }}')" title="Editar">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger ms-1" onclick="excluirEquipamento({{ e.pk }}, '{{ e.nome|escapejs }}')" title="Excluir">
+                                    <i class="bi bi-trash3"></i> Excluir
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-secondary py-4">Nenhum equipamento cadastrado nesta categoria.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -132,11 +310,106 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="modalExcluir" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h6 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmar Exclusão</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="mb-1">Deseja realmente excluir o equipamento:</p>
+                <p class="fw-bold text-danger" id="excluirNome"></p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger btn-sm" id="btnConfirmarExclusao">Excluir</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
+<style>
+    /* Collapse toggle arrow rotation */
+    .collapse-icon {
+        transition: transform 0.3s ease;
+    }
+    [aria-expanded="true"] .collapse-icon {
+        transform: rotate(180deg);
+    }
+    /* Card header hover */
+    #btnCollapseArmamentos,
+    #btnCollapseOutros {
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid rgba(197, 160, 89, 0.15);
+        transition: background 0.2s ease;
+    }
+    #btnCollapseArmamentos:hover,
+    #btnCollapseOutros:hover {
+        background: rgba(197, 160, 89, 0.06);
+    }
+
+    /* Relatório Geral Table */
+    .relatorio-geral-card {
+        max-width: 520px;
+        border: 1px solid rgba(197, 160, 89, 0.25) !important;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .relatorio-header {
+        background: linear-gradient(135deg, #141e2b 0%, #0e1620 100%);
+        border-bottom: 2px solid rgba(197, 160, 89, 0.3);
+    }
+    .relatorio-geral-table {
+        background: #0d1520;
+        --bs-table-bg: transparent;
+    }
+    .relatorio-geral-table thead th {
+        background: #111b28;
+        border-bottom: 1px solid rgba(197, 160, 89, 0.15);
+        color: #a49678;
+        padding: 0.5rem 0.75rem;
+        font-weight: 600;
+        vertical-align: middle;
+    }
+    .relatorio-geral-table tbody td {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 0.5rem 0.75rem;
+        color: #d4cbb8;
+    }
+    .relatorio-geral-table tbody tr:hover {
+        background: rgba(197, 160, 89, 0.05);
+    }
+    .relatorio-total-row td {
+        background: linear-gradient(135deg, #141e2b 0%, #111925 100%);
+        border-top: 2px solid rgba(197, 160, 89, 0.3) !important;
+        padding: 0.6rem 0.75rem;
+    }
+    .relatorio-dot {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        vertical-align: middle;
+    }
+    .relatorio-dot-green {
+        background: radial-gradient(circle at 35% 35%, #5aeb5a, #1e8c1e);
+        box-shadow: 0 0 6px rgba(46, 204, 46, 0.45);
+    }
+    .relatorio-dot-red {
+        background: radial-gradient(circle at 35% 35%, #ff5555, #a31010);
+        box-shadow: 0 0 6px rgba(255, 60, 60, 0.45);
+    }
+</style>
 <script>
 const modalEquipamento = new bootstrap.Modal(document.getElementById('modalEquipamento'));
+const modalExcluir = new bootstrap.Modal(document.getElementById('modalExcluir'));
+let excluirId = null;
 
 function abrirModalEquipamento(id='', patrimonio='', nome='', tipo='arma', status='operante', local='', obs='') {
     document.getElementById('e_id').value = id;
@@ -186,5 +459,33 @@ async function salvarEquipamento() {
         alert("Erro de conexão"); 
     }
 }
+
+function excluirEquipamento(id, nome) {
+    excluirId = id;
+    document.getElementById('excluirNome').innerText = nome;
+    modalExcluir.show();
+}
+
+document.getElementById('btnConfirmarExclusao').addEventListener('click', async () => {
+    if (!excluirId) return;
+    try {
+        let response = await fetch("{% url 'equipamentos:api_excluir_equipamento' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ id: excluirId })
+        });
+        let result = await response.json();
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert("Erro: " + result.error);
+        }
+    } catch(e) {
+        alert("Erro de conexão");
+    }
+});
 </script>
 {% endblock %}

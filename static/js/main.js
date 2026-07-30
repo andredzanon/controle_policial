@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const themeToggleBtn = document.getElementById('themeToggle');
     const htmlElement = document.documentElement;
-    const icon = themeToggleBtn.querySelector('i');
 
     // Check for saved theme preference or use the system preference
     const savedTheme = localStorage.getItem('theme');
@@ -16,17 +15,25 @@ document.addEventListener('DOMContentLoaded', () => {
         setTheme('light');
     }
 
-    // Toggle theme on click
-    themeToggleBtn.addEventListener('click', () => {
-        const currentTheme = htmlElement.getAttribute('data-bs-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        setTheme(newTheme);
-    });
+    if (themeToggleBtn) {
+        const icon = themeToggleBtn.querySelector('i');
+        updateIcon(htmlElement.getAttribute('data-bs-theme'), icon);
+
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = htmlElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+            updateIcon(newTheme, icon);
+        });
+    }
 
     function setTheme(themeName) {
         htmlElement.setAttribute('data-bs-theme', themeName);
         localStorage.setItem('theme', themeName);
-        
+    }
+
+    function updateIcon(themeName, icon) {
+        if (!icon) return;
         if (themeName === 'dark') {
             icon.classList.remove('bi-moon-stars');
             icon.classList.add('bi-sun');
