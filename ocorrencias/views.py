@@ -111,6 +111,31 @@ def api_gerar_relatorio(request):
                 linhas.append(f"- {item[1]} {item[0]} ({item[2]})")
             linhas.append("")
 
+        # Objetos Apreendidos
+        objetos = data.get('objetos', [])
+        if objetos:
+            linhas.append("*OBJETOS APREENDIDOS:*")
+            for item in objetos:
+                linhas.append(f"- {item[0]} {item[1]}")
+            linhas.append("")
+
+        # BOU/TC
+        bous = data.get('bous', [])
+        if bous:
+            linhas.append("*BOU / TC:*")
+            for item in bous:
+                linhas.append(f"- {item[0]} ({item[1]})")
+            linhas.append("")
+
+        # Notificações
+        notificacoes = data.get('notificacoes', [])
+        if notificacoes:
+            total_notificacoes = sum(int(item[0]) for item in notificacoes)
+            linhas.append(f"*NOTIFICAÇÕES: {total_notificacoes}*")
+            for item in notificacoes:
+                linhas.append(f"- {item[0]} {item[1]}")
+            linhas.append("")
+
         obs = data.get('observacoes', '').strip()
         if obs:
             linhas.append("*OBSERVAÇÕES:*")
@@ -164,6 +189,9 @@ def api_salvar_relatorio(request):
                 turno.prisoes_apreensoes.all().delete()
                 turno.drogas_apreendidas.all().delete()
                 turno.veiculos_recolhidos.all().delete()
+                turno.objetos_apreendidos.all().delete()
+                turno.registros_bou.all().delete()
+                turno.notificacoes.all().delete()
             else:
                 turno = RelatorioTurno.objects.create(
                     data=data_str,
@@ -216,6 +244,18 @@ def api_salvar_relatorio(request):
             for vr in data.get('veiculos_recuperados', []):
                 destino = 'recuperado_patio' if 'pátio' in vr[2].lower() else 'recuperado_delegacia'
                 VeiculoRecolhido.objects.create(turno=turno, tipo=vr[0], quantidade=int(vr[1]), destino=destino)
+
+            # Salvar objetos apreendidos
+            for obj in data.get('objetos', []):
+                ObjetoApreendido.objects.create(turno=turno, quantidade=int(obj[0]), descricao=obj[1])
+
+            # Salvar BOU
+            for bou in data.get('bous', []):
+                RegistroBOU.objects.create(turno=turno, ano_numero=bou[0], natureza=bou[1])
+
+            # Salvar Notificações
+            for notif in data.get('notificacoes', []):
+                Notificacao.objects.create(turno=turno, quantidade=int(notif[0]), artigo=notif[1])
 
             km_final = data.get('km_final')
             if km_final:
@@ -439,7 +479,10 @@ def api_obter_dados_relatorio_json(request, pk):
             'prisoes': [],
             'drogas': [],
             'veiculos_recolhidos': [],
-            'veiculos_recuperados': []
+            'veiculos_recuperados': [],
+            'objetos': [],
+            'bous': [],
+            'notificacoes': []
         }
 
         # Veículos Abordados
@@ -481,6 +524,18 @@ def api_obter_dados_relatorio_json(request, pk):
             elif vr.destino in ['recuperado_patio', 'recuperado_delegacia']:
                 recolhimento_label = 'Pátio da CIA PM' if vr.destino == 'recuperado_patio' else 'Delegacia'
                 payload['veiculos_recuperados'].append([vr.tipo, str(vr.quantidade), recolhimento_label])
+
+        # Objetos
+        for obj in turno.objetos_apreendidos.all():
+            payload['objetos'].append([str(obj.quantidade), obj.descricao])
+
+        # BOUs
+        for bou in turno.registros_bou.all():
+            payload['bous'].append([bou.ano_numero, bou.natureza])
+
+        # Notificações
+        for notif in turno.notificacoes.all():
+            payload['notificacoes'].append([str(notif.quantidade), notif.artigo])
 
         return JsonResponse(payload)
     except RelatorioTurno.DoesNotExist:

@@ -307,6 +307,105 @@
                             </div>
                         </div>
 
+                        <!-- Objetos Apreendidos -->
+                        <div class="card mb-3 shadow-sm border-0">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center border-0 py-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary bg-opacity-10 text-primary p-2 rounded me-2 d-flex align-items-center justify-content-center">
+                                        <i class="bi bi-box"></i>
+                                    </div>
+                                    <span class="fw-medium text-primary">Objetos Apreendidos</span>
+                                </div>
+                                <div class="form-check form-switch m-0 fs-5">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="toggleObjetos" data-bs-toggle="collapse" data-bs-target="#collapseObjetos">
+                                </div>
+                            </div>
+                            <div class="collapse" id="collapseObjetos">
+                                <div class="card-body pt-0">
+                                    <div id="listaObjetos" class="mb-2"></div>
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-sm-3">
+                                            <label class="form-label small mb-1">Qtd</label>
+                                            <input type="number" class="form-control" id="inputObjetoQtd" placeholder="0" min="1" value="1">
+                                        </div>
+                                        <div class="col-sm-9">
+                                            <label class="form-label small mb-1">Descrição do Objeto</label>
+                                            <input type="text" class="form-control" id="inputObjetoDesc" placeholder="Ex: Smartphone, Relógio, Carteira...">
+                                        </div>
+                                        <div class="col-12 mt-2">
+                                            <button type="button" class="btn btn-outline-primary btn-sm text-primary" style="border-style: dashed !important; border-width: 2px;" onclick="addListRow('listaObjetos', 'Objeto', ['inputObjetoQtd', 'inputObjetoDesc'])"><i class="bi bi-plus"></i> Adicionar objeto</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BOU / TC -->
+                        <div class="card mb-3 shadow-sm border-0">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center border-0 py-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary bg-opacity-10 text-primary p-2 rounded me-2 d-flex align-items-center justify-content-center">
+                                        <i class="bi bi-file-text"></i>
+                                    </div>
+                                    <span class="fw-medium text-primary">BOU / TC</span>
+                                </div>
+                                <div class="form-check form-switch m-0 fs-5">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="toggleBOU" data-bs-toggle="collapse" data-bs-target="#collapseBOU">
+                                </div>
+                            </div>
+                            <div class="collapse" id="collapseBOU">
+                                <div class="card-body pt-0">
+                                    <div id="listaBOU" class="mb-2"></div>
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-sm-4">
+                                            <label class="form-label small mb-1">Ano/Número</label>
+                                            <input type="text" class="form-control" id="inputBOUAnoNum" placeholder="Ex: 2024/001">
+                                        </div>
+                                        <div class="col-sm-8">
+                                            <label class="form-label small mb-1">Natureza</label>
+                                            <input type="text" class="form-control" id="inputBOUNatureza" placeholder="Natureza da ocorrência">
+                                        </div>
+                                        <div class="col-12 mt-2">
+                                            <button type="button" class="btn btn-outline-primary btn-sm text-primary" style="border-style: dashed !important; border-width: 2px;" onclick="addListRow('listaBOU', 'BOU', ['inputBOUAnoNum', 'inputBOUNatureza'])"><i class="bi bi-plus"></i> Adicionar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notificações -->
+                        <div class="card mb-3 shadow-sm border-0">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center border-0 py-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-info bg-opacity-10 text-info p-2 rounded me-2 d-flex align-items-center justify-content-center">
+                                        <i class="bi bi-card-checklist"></i>
+                                    </div>
+                                    <span class="fw-medium text-info">Notificações</span>
+                                </div>
+                                <div class="form-check form-switch m-0 fs-5">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="toggleNotificacoes" data-bs-toggle="collapse" data-bs-target="#collapseNotificacoes">
+                                </div>
+                            </div>
+                            <div class="collapse" id="collapseNotificacoes">
+                                <div class="card-body pt-0">
+                                    <div id="listaNotificacoes" class="mb-2"></div>
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-sm-3">
+                                            <label class="form-label small mb-1">Qtd</label>
+                                            <input type="number" class="form-control" id="inputNotificacaoQtd" placeholder="0" min="1" value="1">
+                                        </div>
+                                        <div class="col-sm-9">
+                                            <label class="form-label small mb-1">Artigo</label>
+                                            <input type="text" class="form-control" id="inputNotificacaoArtigo" placeholder="Ex: Art. 165">
+                                        </div>
+                                        <div class="col-12 mt-2">
+                                            <button type="button" class="btn btn-outline-info btn-sm text-info" style="border-style: dashed !important; border-width: 2px;" onclick="addListRow('listaNotificacoes', 'Notificação', ['inputNotificacaoQtd', 'inputNotificacaoArtigo'])"><i class="bi bi-plus"></i> Adicionar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Observações -->
                         <div class="accordion-item">
                             <h2 class="accordion-header">
@@ -365,7 +464,10 @@ let dynamicLists = {
     'listaDrogas': [],
     'listaOutrosVeiculos': [],
     'listaVeiculosRecolhidos': [],
-    'listaVeiculosRecuperados': []
+    'listaVeiculosRecuperados': [],
+    'listaObjetos': [],
+    'listaBOU': [],
+    'listaNotificacoes': []
 };
 
 let editId = "{{ edit_id }}";
@@ -507,7 +609,7 @@ function renderList(listId, type, triggerSumUpdate = false) {
 function resetForm() {
     document.getElementById('formOcorrencias').reset();
     document.getElementById('data').valueAsDate = new Date();
-    ['listaPrisoes', 'listaDrogas', 'listaOutrosVeiculos', 'listaVeiculosRecolhidos', 'listaVeiculosRecuperados'].forEach(list => {
+    ['listaPrisoes', 'listaDrogas', 'listaOutrosVeiculos', 'listaVeiculosRecolhidos', 'listaVeiculosRecuperados', 'listaObjetos', 'listaBOU', 'listaNotificacoes'].forEach(list => {
         dynamicLists[list] = [];
         document.getElementById(list).innerHTML = '';
     });
@@ -527,6 +629,9 @@ function getPayload() {
         outros_veiculos: dynamicLists['listaOutrosVeiculos'],
         veiculos_recolhidos: dynamicLists['listaVeiculosRecolhidos'],
         veiculos_recuperados: dynamicLists['listaVeiculosRecuperados'],
+        objetos: dynamicLists['listaObjetos'],
+        bous: dynamicLists['listaBOU'],
+        notificacoes: dynamicLists['listaNotificacoes'],
         observacoes: document.getElementById('observacoes').value,
         dinheiro_apreendido: parseFloat(document.getElementById('inputDinheiro').value) || 0,
         km_final: document.getElementById('km_final').value ? parseInt(document.getElementById('km_final').value) : null
@@ -684,6 +789,15 @@ async function carregarDadosEdicao() {
 
         dynamicLists['listaVeiculosRecuperados'] = p.veiculos_recuperados || [];
         renderList('listaVeiculosRecuperados', 'Veículo Recuperado');
+
+        dynamicLists['listaObjetos'] = p.objetos || [];
+        renderList('listaObjetos', 'Objeto');
+
+        dynamicLists['listaBOU'] = p.bous || [];
+        renderList('listaBOU', 'BOU');
+
+        dynamicLists['listaNotificacoes'] = p.notificacoes || [];
+        renderList('listaNotificacoes', 'Notificação');
         
         updateCondutoresSum();
         
