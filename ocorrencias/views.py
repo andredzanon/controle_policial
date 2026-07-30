@@ -130,10 +130,23 @@ def api_gerar_relatorio(request):
         # Notificações
         notificacoes = data.get('notificacoes', [])
         if notificacoes:
-            total_notificacoes = sum(int(item[0]) for item in notificacoes)
-            linhas.append(f"*NOTIFICAÇÕES: {total_notificacoes}*")
+            import re
+            notif_agrupadas = {}
             for item in notificacoes:
-                linhas.append(f"- {item[0]} {item[1]}")
+                qtd = int(item[0])
+                artigo_raw = str(item[1])
+                m = re.search(r'\d+', artigo_raw)
+                artigo = m.group(0) if m else artigo_raw.strip()
+                if artigo in notif_agrupadas:
+                    notif_agrupadas[artigo] += qtd
+                else:
+                    notif_agrupadas[artigo] = qtd
+            
+            total_notificacoes = sum(notif_agrupadas.values())
+            linhas.append(f"*NOTIFICAÇÕES: {total_notificacoes}*")
+            # Ordenar por artigo (convertendo para int quando possível)
+            for art in sorted(notif_agrupadas.keys(), key=lambda x: int(x) if x.isdigit() else 0):
+                linhas.append(f"- {notif_agrupadas[art]} Art. {art}")
             linhas.append("")
 
         obs = data.get('observacoes', '').strip()
@@ -535,7 +548,10 @@ def api_obter_dados_relatorio_json(request, pk):
 
         # Notificações
         for notif in turno.notificacoes.all():
-            payload['notificacoes'].append([str(notif.quantidade), notif.artigo])
+            import re
+            m = re.search(r'\d+', notif.artigo)
+            art_val = m.group(0) if m else notif.artigo
+            payload['notificacoes'].append([str(notif.quantidade), art_val])
 
         return JsonResponse(payload)
     except RelatorioTurno.DoesNotExist:
