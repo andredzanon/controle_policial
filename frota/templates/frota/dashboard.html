@@ -8,9 +8,9 @@
         <h3 class="mb-0">Controle de Viaturas e Manutenção</h3>
         <div class="btn-group">
             {% if user.nivel != 'operador' %}
-            <button class="btn btn-primary" onclick="abrirModalViatura()"><i class="bi bi-car-front"></i> Cadastrar Nova Viatura</button>
-            <a href="{% url 'frota:abertura_turno' %}" class="btn btn-outline-primary"><i class="bi bi-clock-history"></i> Abrir Turno</a>
+            <a href="{% url 'frota:abertura_turno' %}" class="btn btn-success fw-bold"><i class="bi bi-clock-history"></i> Abrir Turno</a>
             <button class="btn btn-outline-secondary" onclick="abrirModalRelatorioGeral()"><i class="bi bi-file-earmark-text"></i> Relatórios</button>
+            <button class="btn btn-outline-primary" onclick="abrirModalViatura()"><i class="bi bi-car-front"></i> Incluir Nova Viatura</button>
             {% endif %}
         </div>
     </div>
