@@ -60,32 +60,41 @@ def api_salvar_equipamento(request):
         status = data.get('status', 'operante')
         localizacao = data.get('localizacao_atual', '').strip()
         observacoes = data.get('observacoes', '').strip()
+        quantidade = int(data.get('quantidade', 1))
 
-        if not patrimonio or not nome:
-            return JsonResponse({'error': 'Preencha Patrimônio e Nome.'}, status=400)
+        if tipo != 'municao' and not patrimonio:
+            return JsonResponse({'error': 'Preencha o Patrimônio para este tipo de equipamento.'}, status=400)
+        
+        if not nome:
+            return JsonResponse({'error': 'Preencha o Nome do equipamento.'}, status=400)
+
+        # Verificar unicidade de patrimônio apenas se preenchido e não for munição
+        if patrimonio and tipo != 'municao':
+            if e_id:
+                if Equipamento.objects.filter(numero_patrimonio=patrimonio).exclude(pk=e_id).exists():
+                    return JsonResponse({'error': 'Número de Patrimônio já cadastrado.'}, status=400)
+            else:
+                if Equipamento.objects.filter(numero_patrimonio=patrimonio).exists():
+                    return JsonResponse({'error': 'Número de Patrimônio já cadastrado.'}, status=400)
 
         if e_id:
             e = get_object_or_404(Equipamento, pk=e_id)
-            if Equipamento.objects.filter(numero_patrimonio=patrimonio).exclude(pk=e_id).exists():
-                return JsonResponse({'error': 'Número de Patrimônio já cadastrado.'}, status=400)
-            
-            e.numero_patrimonio = patrimonio
+            e.numero_patrimonio = patrimonio if patrimonio else None
             e.nome = nome
             e.tipo = tipo
             e.status = status
+            e.quantidade = quantidade
             e.localizacao_atual = localizacao
             e.observacoes = observacoes
             e.save()
             msg = 'Equipamento atualizado com sucesso.'
         else:
-            if Equipamento.objects.filter(numero_patrimonio=patrimonio).exists():
-                return JsonResponse({'error': 'Número de Patrimônio já cadastrado.'}, status=400)
-
             e = Equipamento.objects.create(
-                numero_patrimonio=patrimonio,
+                numero_patrimonio=patrimonio if patrimonio else None,
                 nome=nome,
                 tipo=tipo,
                 status=status,
+                quantidade=quantidade,
                 localizacao_atual=localizacao,
                 observacoes=observacoes
             )

@@ -90,7 +90,7 @@
                         {% for e in armamentos %}
                         <tr>
                             <td class="fw-bold">{{ e.numero_patrimonio }}</td>
-                            <td>{{ e.nome }}</td>
+                            <td>{{ e.nome }}{% if e.tipo == 'municao' %} <span class="badge bg-secondary ms-1">Qtd: {{ e.quantidade }}</span>{% endif %}</td>
                             <td>
                                 {% if e.tipo == 'arma' %}<i class="bi bi-crosshair me-1"></i>
                                 {% elif e.tipo == 'municao' %}<i class="bi bi-bullseye me-1"></i>
@@ -111,7 +111,7 @@
                                 {% if e.observacoes %}<strong>Obs:</strong> {{ e.observacoes }}{% endif %}
                             </td>
                             <td class="text-end text-nowrap">
-                                <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalEquipamento({{ e.pk }}, '{{ e.numero_patrimonio|escapejs }}', '{{ e.nome|escapejs }}', '{{ e.tipo }}', '{{ e.status }}', '{{ e.localizacao_atual|escapejs|default:"" }}', '{{ e.observacoes|escapejs|default:"" }}')" title="Editar">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalEquipamento({{ e.pk }}, '{{ e.numero_patrimonio|escapejs }}', '{{ e.nome|escapejs }}', '{{ e.tipo }}', '{{ e.status }}', '{{ e.localizacao_atual|escapejs|default:"" }}', '{{ e.observacoes|escapejs|default:"" }}', {{ e.quantidade }})" title="Editar">
                                     <i class="bi bi-pencil"></i> Editar
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger ms-1" onclick="excluirEquipamento({{ e.pk }}, '{{ e.nome|escapejs }}')" title="Excluir">
@@ -208,7 +208,7 @@
                         {% for e in outros %}
                         <tr>
                             <td class="fw-bold">{{ e.numero_patrimonio }}</td>
-                            <td>{{ e.nome }}</td>
+                            <td>{{ e.nome }}{% if e.tipo == 'municao' %} <span class="badge bg-secondary ms-1">Qtd: {{ e.quantidade }}</span>{% endif %}</td>
                             <td>
                                 {% if e.tipo == 'colete' %}<i class="bi bi-shield me-1"></i>
                                 {% elif e.tipo == 'celular' %}<i class="bi bi-phone me-1"></i>
@@ -231,7 +231,7 @@
                                 {% if e.observacoes %}<strong>Obs:</strong> {{ e.observacoes }}{% endif %}
                             </td>
                             <td class="text-end text-nowrap">
-                                <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalEquipamento({{ e.pk }}, '{{ e.numero_patrimonio|escapejs }}', '{{ e.nome|escapejs }}', '{{ e.tipo }}', '{{ e.status }}', '{{ e.localizacao_atual|escapejs|default:"" }}', '{{ e.observacoes|escapejs|default:"" }}')" title="Editar">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalEquipamento({{ e.pk }}, '{{ e.numero_patrimonio|escapejs }}', '{{ e.nome|escapejs }}', '{{ e.tipo }}', '{{ e.status }}', '{{ e.localizacao_atual|escapejs|default:"" }}', '{{ e.observacoes|escapejs|default:"" }}', {{ e.quantidade }})" title="Editar">
                                     <i class="bi bi-pencil"></i> Editar
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger ms-1" onclick="excluirEquipamento({{ e.pk }}, '{{ e.nome|escapejs }}')" title="Excluir">
@@ -265,26 +265,40 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Nº do Patrimônio</label>
-                            <input type="text" class="form-control" id="e_patrimonio" required>
+                            <label class="form-label" id="label_patrimonio">Nº do Patrimônio</label>
+                            <input type="text" class="form-control" id="e_patrimonio">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Tipo</label>
-                            <select class="form-select" id="e_tipo" required>
+                            <select class="form-select" id="e_tipo" onchange="toggleCamposEquipamento()" required>
                                 <option value="arma">Armamento</option>
                                 <option value="municao">Munição</option>
-                                <option value="colete">Colete Balístico / EPI</option>
-                                <option value="celular">Celular Institucional</option>
-                                <option value="algemas">Algemas</option>
-                                <option value="expediente">Material de Expediente</option>
-                                <option value="outros">Outros (Cones, Extintores, etc)</option>
+                                <option value="celular">SADE Celular inst.</option>
+                                <option value="impressora">Impressora</option>
+                                <option value="etilometro">Etilometro</option>
+                                <option value="maleta">Maleta</option>
+                                <option value="outros">Outros</option>
                             </select>
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label">Nome/Descrição do Equipamento</label>
-                        <input type="text" class="form-control" id="e_nome" placeholder="Ex: Pistola Taurus PT100" required>
+                    <div class="row">
+                        <div class="col-md-8 mb-3" id="container_nome_text" style="display: none;">
+                            <label class="form-label">Nome/Descrição do Equipamento</label>
+                            <input type="text" class="form-control" id="e_nome_text" placeholder="Ex: Rádio Motorola">
+                        </div>
+                        <div class="col-md-8 mb-3" id="container_nome_select">
+                            <label class="form-label">Armamento</label>
+                            <select class="form-select" id="e_nome_select">
+                                <option value="SMT 9MM">SMT 9MM</option>
+                                <option value="CALIBRE 12">CALIBRE 12</option>
+                                <option value="TASER">TASER</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3" id="container_quantidade" style="display: none;">
+                            <label class="form-label">Quantidade</label>
+                            <input type="number" class="form-control" id="e_quantidade" min="1" value="1">
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -415,11 +429,50 @@ const modalEquipamento = new bootstrap.Modal(document.getElementById('modalEquip
 const modalExcluir = new bootstrap.Modal(document.getElementById('modalExcluir'));
 let excluirId = null;
 
-function abrirModalEquipamento(id='', patrimonio='', nome='', tipo='arma', status='operante', local='', obs='') {
+function toggleCamposEquipamento() {
+    let tipo = document.getElementById('e_tipo').value;
+    let labelPatrimonio = document.getElementById('label_patrimonio');
+    
+    if (tipo === 'arma') {
+        document.getElementById('container_nome_select').style.display = 'block';
+        document.getElementById('container_nome_text').style.display = 'none';
+        document.getElementById('container_quantidade').style.display = 'none';
+        labelPatrimonio.innerHTML = 'Nº do Patrimônio <span class="text-danger">*</span>';
+    } else if (tipo === 'municao') {
+        document.getElementById('container_nome_select').style.display = 'none';
+        document.getElementById('container_nome_text').style.display = 'block';
+        document.getElementById('container_quantidade').style.display = 'block';
+        labelPatrimonio.innerHTML = 'Nº do Patrimônio/Lote';
+    } else {
+        document.getElementById('container_nome_select').style.display = 'none';
+        document.getElementById('container_nome_text').style.display = 'block';
+        document.getElementById('container_quantidade').style.display = 'none';
+        labelPatrimonio.innerHTML = 'Nº do Patrimônio <span class="text-danger">*</span>';
+    }
+}
+
+function abrirModalEquipamento(id='', patrimonio='', nome='', tipo='arma', status='operante', local='', obs='', quantidade=1) {
     document.getElementById('e_id').value = id;
     document.getElementById('e_patrimonio').value = patrimonio;
-    document.getElementById('e_nome').value = nome;
     document.getElementById('e_tipo').value = tipo;
+    
+    toggleCamposEquipamento();
+    
+    if (tipo === 'arma') {
+        let selectArma = document.getElementById('e_nome_select');
+        let options = Array.from(selectArma.options).map(o => o.value);
+        if (nome && options.includes(nome)) {
+            selectArma.value = nome;
+        } else {
+            selectArma.value = 'SMT 9MM';
+        }
+        document.getElementById('e_nome_text').value = '';
+    } else {
+        document.getElementById('e_nome_text').value = nome;
+        document.getElementById('e_nome_select').value = 'SMT 9MM';
+    }
+    
+    document.getElementById('e_quantidade').value = quantidade;
     document.getElementById('e_status').value = status;
     document.getElementById('e_local').value = local;
     document.getElementById('e_obs').value = obs;
@@ -429,18 +482,25 @@ function abrirModalEquipamento(id='', patrimonio='', nome='', tipo='arma', statu
 }
 
 async function salvarEquipamento() {
+    let tipo = document.getElementById('e_tipo').value;
+    let nome = tipo === 'arma' ? document.getElementById('e_nome_select').value : document.getElementById('e_nome_text').value;
+
     let payload = {
         id: document.getElementById('e_id').value,
         numero_patrimonio: document.getElementById('e_patrimonio').value,
-        nome: document.getElementById('e_nome').value,
-        tipo: document.getElementById('e_tipo').value,
+        nome: nome,
+        tipo: tipo,
         status: document.getElementById('e_status').value,
+        quantidade: document.getElementById('e_quantidade').value,
         localizacao_atual: document.getElementById('e_local').value,
         observacoes: document.getElementById('e_obs').value
     };
 
-    if(!payload.numero_patrimonio || !payload.nome) {
-        alert("Preencha o Patrimônio e o Nome."); return;
+    if (tipo !== 'municao' && !payload.numero_patrimonio) {
+        alert("Preencha o Patrimônio."); return;
+    }
+    if (!payload.nome) {
+        alert("Preencha o Nome."); return;
     }
 
     try {

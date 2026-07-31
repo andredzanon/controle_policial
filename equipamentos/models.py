@@ -9,14 +9,15 @@ class Equipamento(models.Model):
     class TipoEquipamento(models.TextChoices):
         ARMA = 'arma', 'Armamento'
         MUNICAO = 'municao', 'Munição'
-        COLETE = 'colete', 'Colete Balístico / EPI'
-        CELULAR = 'celular', 'Celular Institucional'
-        ALGEMAS = 'algemas', 'Algemas'
-        EXPEDIENTE = 'expediente', 'Material de Expediente'
-        OUTROS = 'outros', 'Outros (Cones, Extintores, etc)'
+        CELULAR = 'celular', 'SADE Celular inst.'
+        IMPRESSORA = 'impressora', 'Impressora'
+        ETILOMETRO = 'etilometro', 'Etilometro'
+        MALETA = 'maleta', 'Maleta'
+        OUTROS = 'outros', 'Outros'
 
-    numero_patrimonio = models.CharField(max_length=100, unique=True)
+    numero_patrimonio = models.CharField(max_length=100, blank=True, null=True)
     nome = models.CharField(max_length=150)
+    quantidade = models.IntegerField(default=1)
     tipo = models.CharField(
         max_length=20,
         choices=TipoEquipamento.choices,
