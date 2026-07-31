@@ -17,4 +17,5 @@ urlpatterns = [
     path('api/salvar-abertura-turno/', views.api_salvar_abertura_turno, name='api_salvar_abertura_turno'),
     path('api/motoristas/', views.api_motoristas, name='api_motoristas'),
     path('api/cancelar-abertura-turno/', views.api_cancelar_abertura_turno, name='api_cancelar_abertura_turno'),
+    path('api/excluir-viatura/<int:pk>/', views.api_excluir_viatura, name='api_excluir_viatura'),
 ]

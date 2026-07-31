@@ -149,9 +149,14 @@
                 <div class="mt-auto pt-3 border-top">
                     <div class="d-flex justify-content-between gap-1 flex-wrap">
                         {% if user.nivel != 'operador' %}
-                        <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalViatura({{ viatura.pk }}, '{{ viatura.prefixo }}', '{{ viatura.placa }}', '{{ viatura.marca }}', '{{ viatura.modelo }}', '{{ viatura.tipo }}', {{ viatura.km_atual }}, {{ viatura.limite_troca_oleo }}, {{ viatura.has_open_turno|yesno:"true,false" }}, '{{ viatura.status }}')" title="Editar">
-                            <i class="bi bi-pencil"></i>
-                        </button>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalViatura({{ viatura.pk }}, '{{ viatura.prefixo }}', '{{ viatura.placa }}', '{{ viatura.marca }}', '{{ viatura.modelo }}', '{{ viatura.tipo }}', {{ viatura.km_atual }}, {{ viatura.limite_troca_oleo }}, {{ viatura.has_open_turno|yesno:"true,false" }}, '{{ viatura.status }}')" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="excluirViatura({{ viatura.pk }}, '{{ viatura.prefixo }}')" title="Excluir">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
                         {% endif %}
                         <button class="btn btn-sm btn-outline-info" onclick="verHistoricoManutencao({{ viatura.pk }}, '{{ viatura.prefixo }}')" title="Histórico de Manutenção">
                             <i class="bi bi-clock-history"></i> Histórico
@@ -683,6 +688,29 @@ async function verHistoricoManutencao(id, prefixo) {
         }
     } catch(e) {
         tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Erro ao carregar dados.</td></tr>';
+    }
+}
+
+async function excluirViatura(id, prefixo) {
+    if (confirm(`Tem certeza que deseja excluir a viatura ${prefixo} permanentemente?`)) {
+        try {
+            let response = await fetch(`/frota/api/excluir-viatura/${id}/`, {
+                method: "POST",
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            });
+            let result = await response.json();
+            
+            if (response.ok) {
+                alert(result.message);
+                location.reload();
+            } else {
+                alert("Erro: " + result.error);
+            }
+        } catch (err) {
+            alert("Erro de conexão.");
+        }
     }
 }
 </script>

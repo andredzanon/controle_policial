@@ -525,3 +525,19 @@ def api_relatorio_geral_texto(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+from django.db.models import ProtectedError
+
+@login_required
+@require_POST
+def api_excluir_viatura(request, pk):
+    if request.user.nivel == 'operador':
+        return JsonResponse({'error': 'Permissão negada.'}, status=403)
+        
+    viatura = get_object_or_404(Viatura, pk=pk)
+    try:
+        viatura.delete()
+        return JsonResponse({'message': 'Viatura excluída com sucesso!'})
+    except ProtectedError:
+        return JsonResponse({'error': 'Esta viatura não pode ser excluída pois possui relatórios de turno vinculados a ela.'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
