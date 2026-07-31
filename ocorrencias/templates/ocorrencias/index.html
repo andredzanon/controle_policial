@@ -429,11 +429,8 @@
             <div class="card-body">
                 <textarea class="form-control mb-3 text-white bg-dark" style="font-family: monospace; font-size: 0.9rem;" id="textoRelatorio" rows="15" readonly>Preencha os dados e clique em "Gerar Relatório".</textarea>
                 <div class="d-grid gap-2">
-                    <button class="btn btn-success" disabled id="btnWhatsApp">
-                        <i class="bi bi-whatsapp"></i> Enviar p/ WhatsApp
-                    </button>
-                    <button class="btn btn-outline-primary" disabled id="btnSalvar">
-                        <i class="bi bi-cloud-arrow-up"></i> Salvar no Banco
+                    <button class="btn btn-success" disabled id="btnSalvarWhatsapp">
+                        <i class="bi bi-cloud-arrow-up"></i> Salvar e Enviar p/ WhatsApp
                     </button>
                 </div>
             </div>
@@ -457,6 +454,18 @@ let dynamicLists = {
 };
 
 let editId = "{{ edit_id }}";
+let isDirty = false;
+
+window.addEventListener('beforeunload', function (e) {
+    if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+
+document.getElementById('formOcorrencias').addEventListener('input', function() {
+    isDirty = true;
+});
 
 // Auto-set today's date
 document.getElementById('data').valueAsDate = new Date();
@@ -575,12 +584,14 @@ function addListRow(listId, type, inputIds, triggerSumUpdate = false) {
         }
     });
 
+    isDirty = true;
     if (triggerSumUpdate) updateCondutoresSum();
 }
 
 function removeListRow(listId, index, type, triggerSumUpdate = false) {
     dynamicLists[listId].splice(index, 1);
     renderList(listId, type, triggerSumUpdate);
+    isDirty = true;
     if (triggerSumUpdate) updateCondutoresSum();
 }
 
@@ -612,8 +623,8 @@ function resetForm() {
         document.getElementById(list).innerHTML = '';
     });
     document.getElementById('textoRelatorio').value = "Preencha os dados e clique em 'Gerar Relatório'.";
-    document.getElementById('btnWhatsApp').disabled = true;
-    document.getElementById('btnSalvar').disabled = true;
+    document.getElementById('btnSalvarWhatsapp').disabled = true;
+    isDirty = false;
 }
 
 function getPayload() {
@@ -681,8 +692,7 @@ document.getElementById('btnGerarRelatorio').addEventListener('click', async fun
         
         if(response.ok) {
             document.getElementById('textoRelatorio').value = result.texto;
-            document.getElementById('btnWhatsApp').disabled = false;
-            document.getElementById('btnSalvar').disabled = false;
+            document.getElementById('btnSalvarWhatsapp').disabled = false;
         } else {
             alert("Erro: " + result.error);
         }
@@ -694,18 +704,11 @@ document.getElementById('btnGerarRelatorio').addEventListener('click', async fun
     }
 });
 
-// WhatsApp Share
-document.getElementById('btnWhatsApp').addEventListener('click', function() {
-    let text = document.getElementById('textoRelatorio').value;
-    let url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
-    window.open(url, '_blank');
-});
-
-// Logic to Save to Database (RNF-15, SPA)
-document.getElementById('btnSalvar').addEventListener('click', async function() {
+// Logic to Save to Database and send WhatsApp
+document.getElementById('btnSalvarWhatsapp').addEventListener('click', async function() {
     let payload = getPayload();
 
-    let btn = document.getElementById('btnSalvar');
+    let btn = document.getElementById('btnSalvarWhatsapp');
     btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Salvando...';
     btn.disabled = true;
 
@@ -722,7 +725,13 @@ document.getElementById('btnSalvar').addEventListener('click', async function() 
         let result = await response.json();
         
         if(response.ok) {
-            alert(result.message);
+            isDirty = false; // limpa o flag pois salvou
+            
+            // Abre o whatsapp com o texto
+            let text = document.getElementById('textoRelatorio').value;
+            let url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
+            window.open(url, '_blank');
+            
             if (editId) {
                 window.location.href = "{% url 'ocorrencias:historico' %}";
             } else {
@@ -736,7 +745,7 @@ document.getElementById('btnSalvar').addEventListener('click', async function() 
         alert("Erro na conexão com o servidor.");
         btn.disabled = false;
     } finally {
-        btn.innerHTML = editId ? '<i class="bi bi-cloud-arrow-up"></i> Atualizar no Banco' : '<i class="bi bi-cloud-arrow-up"></i> Salvar no Banco';
+        btn.innerHTML = editId ? '<i class="bi bi-cloud-arrow-up"></i> Atualizar e Enviar' : '<i class="bi bi-cloud-arrow-up"></i> Salvar e Enviar p/ WhatsApp';
     }
 });
 
@@ -745,8 +754,8 @@ async function carregarDadosEdicao() {
     if (!editId) return;
     
     document.getElementById('pageTitle').innerText = "Edição de Turno de Serviço";
-    document.getElementById('btnSalvar').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> Atualizar no Banco';
-    document.getElementById('btnSalvar').disabled = false;
+    document.getElementById('btnSalvarWhatsapp').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> Atualizar e Enviar';
+    document.getElementById('btnSalvarWhatsapp').disabled = false;
     
     try {
         let res = await fetch("{% url 'ocorrencias:api_obter_dados_relatorio_json' 0 %}".replace('0', editId));
