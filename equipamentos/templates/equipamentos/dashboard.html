@@ -59,7 +59,7 @@
 {% endif %}
 
 <!-- ===== SECTION 1: ARMAMENTOS ===== -->
-<div class="card shadow-sm mb-4 border-0">
+<div class="card shadow-sm mb-4 border-0 card-armamentos">
     <div class="card-header p-0 border-0">
         <button class="btn w-100 text-start d-flex align-items-center justify-content-between p-3 collapsed"
                 type="button" data-bs-toggle="collapse" data-bs-target="#collapseArmamentos"
@@ -177,7 +177,7 @@
 {% endif %}
 
 <!-- ===== SECTION 2: OUTROS EQUIPAMENTOS ===== -->
-<div class="card shadow-sm mb-4 border-0">
+<div class="card shadow-sm mb-4 border-0 card-equipamentos">
     <div class="card-header p-0 border-0">
         <button class="btn w-100 text-start d-flex align-items-center justify-content-between p-3 collapsed"
                 type="button" data-bs-toggle="collapse" data-bs-target="#collapseOutros"
@@ -370,6 +370,16 @@
     #btnCollapseArmamentos:hover,
     #btnCollapseOutros:hover {
         background: rgba(197, 160, 89, 0.06);
+    }
+    
+    /* Section specific gradients */
+    .card-armamentos {
+        background: linear-gradient(135deg, rgba(35, 20, 20, 0.5) 0%, rgba(13, 21, 32, 0) 50%);
+        border: 1px solid rgba(255, 100, 100, 0.1) !important;
+    }
+    .card-equipamentos {
+        background: linear-gradient(135deg, rgba(20, 30, 40, 0.5) 0%, rgba(13, 21, 32, 0) 50%);
+        border: 1px solid rgba(100, 150, 255, 0.1) !important;
     }
 
     /* Relatório Geral Table */
