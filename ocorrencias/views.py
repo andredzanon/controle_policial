@@ -9,7 +9,8 @@ from datetime import datetime
 from frota.models import Viatura, AberturaTurnoViatura
 from .models import (
     RelatorioTurno, VeiculoAbordado, PessoaAbordada, VeiculoRecolhido,
-    TesteEtilometrico, PrisaoApreensao, ApreensaoDroga
+    TesteEtilometrico, PrisaoApreensao, ApreensaoDroga, ObjetoApreendido,
+    RegistroBOU, Notificacao
 )
 
 @login_required
