@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Frota - SJP Police System{% endblock %}
+{% block title %}Viaturas - SJP Police System{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
-        <h3 class="mb-0">Controle da Frota e Manutenção</h3>
+        <h3 class="mb-0">Controle de Viaturas e Manutenção</h3>
         <div class="btn-group">
             {% if user.nivel != 'operador' %}
             <button class="btn btn-primary" onclick="abrirModalViatura()"><i class="bi bi-car-front"></i> Cadastrar Nova Viatura</button>
@@ -187,7 +187,7 @@
     <div class="col-12 text-center text-secondary py-5">
         <i class="bi bi-car-front text-muted mb-3" style="font-size: 3rem;"></i>
         <h5>Nenhuma viatura cadastrada.</h5>
-        <p>Clique no botão acima para adicionar veículos à frota.</p>
+        <p>Clique no botão acima para adicionar veículos.</p>
     </div>
     {% endfor %}
 </div>
@@ -346,7 +346,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-secondary text-white">
-                <h5 class="modal-title"><i class="bi bi-file-earmark-text"></i> Relatório Geral da Frota</h5>
+                <h5 class="modal-title"><i class="bi bi-file-earmark-text"></i> Relatório Geral de Viaturas</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">

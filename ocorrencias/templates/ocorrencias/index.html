@@ -27,7 +27,7 @@
             <div class="card-body">
                 <!-- Banner de aviso/bloqueio de turno -->
                 <div id="alertaSemTurno" class="alert alert-danger d-none animate__animated animate__fadeIn" role="alert">
-                    <i class="bi bi-exclamation-octagon-fill"></i> <strong>Atenção:</strong> Não há nenhuma viatura com turno aberto. Por favor, realize a <a href="{% url 'frota:abertura_turno' %}" class="alert-link">Abertura de Turno</a> no módulo Frota para poder registrar ocorrências.
+                    <i class="bi bi-exclamation-octagon-fill"></i> <strong>Atenção:</strong> Não há nenhuma viatura com turno aberto. Por favor, realize a <a href="{% url 'frota:abertura_turno' %}" class="alert-link">Abertura de Turno</a> no módulo Viaturas para poder registrar ocorrências.
                 </div>
                 <form id="formOcorrencias">
                     {% csrf_token %}
