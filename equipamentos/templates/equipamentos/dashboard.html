@@ -372,14 +372,24 @@
         background: rgba(197, 160, 89, 0.06);
     }
     
-    /* Section specific gradients */
+    /* Section specific gradients - dark theme */
     .card-armamentos {
-        background: linear-gradient(135deg, rgba(35, 20, 20, 0.5) 0%, rgba(13, 21, 32, 0) 50%);
+        background: linear-gradient(to left, rgba(45, 25, 25, 0.5) 0%, rgba(13, 21, 32, 0) 50%);
         border: 1px solid rgba(255, 100, 100, 0.1) !important;
     }
     .card-equipamentos {
-        background: linear-gradient(135deg, rgba(20, 30, 40, 0.5) 0%, rgba(13, 21, 32, 0) 50%);
+        background: linear-gradient(to left, rgba(20, 35, 50, 0.5) 0%, rgba(13, 21, 32, 0) 50%);
         border: 1px solid rgba(100, 150, 255, 0.1) !important;
+    }
+
+    /* Section specific gradients - light theme */
+    [data-bs-theme="light"] .card-armamentos {
+        background: linear-gradient(to left, rgba(255, 230, 230, 0.8) 0%, rgba(255, 255, 255, 0) 50%);
+        border: 1px solid rgba(255, 150, 150, 0.3) !important;
+    }
+    [data-bs-theme="light"] .card-equipamentos {
+        background: linear-gradient(to left, rgba(230, 240, 255, 0.8) 0%, rgba(255, 255, 255, 0) 50%);
+        border: 1px solid rgba(150, 180, 255, 0.3) !important;
     }
 
     /* Relatório Geral Table */
