@@ -134,19 +134,23 @@ def api_gerar_relatorio(request):
             notif_agrupadas = {}
             for item in notificacoes:
                 qtd = int(item[0])
-                artigo_raw = str(item[1])
+                artigo_raw = str(item[1]).strip()
+                inciso = str(item[2]).strip() if len(item) > 2 else ""
+                
                 m = re.search(r'\d+', artigo_raw)
-                artigo = m.group(0) if m else artigo_raw.strip()
-                if artigo in notif_agrupadas:
-                    notif_agrupadas[artigo] += qtd
+                artigo = m.group(0) if m else artigo_raw
+                
+                key = f"{artigo} - {inciso}" if inciso else artigo
+                
+                if key in notif_agrupadas:
+                    notif_agrupadas[key] += qtd
                 else:
-                    notif_agrupadas[artigo] = qtd
+                    notif_agrupadas[key] = qtd
             
-            total_notificacoes = sum(notif_agrupadas.values())
-            linhas.append(f"*NOTIFICAÇÕES: {total_notificacoes}*")
-            # Ordenar por artigo (convertendo para int quando possível)
-            for art in sorted(notif_agrupadas.keys(), key=lambda x: int(x) if x.isdigit() else 0):
-                linhas.append(f"- {notif_agrupadas[art]} Art. {art}")
+            total_notif = sum(notif_agrupadas.values())
+            linhas.append(f"*NOTIFICAÇÕES ({total_notif}):*")
+            for key, qtd in notif_agrupadas.items():
+                linhas.append(f"- {qtd} do art. {key}")
             linhas.append("")
 
         obs = data.get('observacoes', '').strip()

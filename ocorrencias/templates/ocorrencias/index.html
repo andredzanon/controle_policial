@@ -372,16 +372,20 @@
                                 <div class="accordion-body">
                                     <div id="listaNotificacoes" class="mb-2"></div>
                                     <div class="row g-2 align-items-end">
-                                        <div class="col-sm-3">
+                                        <div class="col-sm-2">
                                             <label class="form-label small mb-1">Qtd</label>
                                             <input type="number" class="form-control" id="inputNotificacaoQtd" placeholder="0" min="1" value="1">
                                         </div>
-                                        <div class="col-sm-7">
+                                        <div class="col-sm-4">
                                             <label class="form-label small mb-1">Artigo</label>
                                             <input type="number" class="form-control" id="inputNotificacaoArtigo" placeholder="Ex: 165">
                                         </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label small mb-1">Inciso</label>
+                                            <input type="text" class="form-control text-uppercase optional-input" id="inputNotificacaoInciso" placeholder="Ex: VII">
+                                        </div>
                                         <div class="col-sm-2">
-                                            <button type="button" class="btn btn-outline-success w-100" onclick="addListRow('listaNotificacoes', 'Notificação', ['inputNotificacaoQtd', 'inputNotificacaoArtigo'])"><i class="bi bi-plus"></i> Add</button>
+                                            <button type="button" class="btn btn-outline-success w-100" onclick="addListRow('listaNotificacoes', 'Notificação', ['inputNotificacaoQtd', 'inputNotificacaoArtigo', 'inputNotificacaoInciso'])"><i class="bi bi-plus"></i> Add</button>
                                         </div>
                                     </div>
                                 </div>
@@ -546,8 +550,14 @@ function addListRow(listId, type, inputIds, triggerSumUpdate = false) {
     let values = [];
     let valid = true;
     inputIds.forEach(id => {
-        let val = document.getElementById(id).value;
-        if (!val) valid = false;
+        let el = document.getElementById(id);
+        let val = el.value.trim();
+        // Se for text-uppercase, forçar caixa alta no JS também para o relatorio
+        if(el.classList.contains('text-uppercase')) {
+            val = val.toUpperCase();
+        }
+        let isOptional = el.classList.contains('optional-input');
+        if (!val && !isOptional) valid = false;
         values.push(val);
     });
 
