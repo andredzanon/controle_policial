@@ -153,9 +153,11 @@
                             <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalViatura({{ viatura.pk }}, '{{ viatura.prefixo }}', '{{ viatura.placa }}', '{{ viatura.marca }}', '{{ viatura.modelo }}', '{{ viatura.tipo }}', {{ viatura.km_atual }}, {{ viatura.limite_troca_oleo }}, {{ viatura.has_open_turno|yesno:"true,false" }}, '{{ viatura.status }}')" title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </button>
+                            {% if user.nivel == 'administrador' or user.nivel == 'admin_master' %}
                             <button class="btn btn-sm btn-outline-danger" onclick="excluirViatura({{ viatura.pk }}, '{{ viatura.prefixo }}')" title="Excluir">
                                 <i class="bi bi-trash"></i>
                             </button>
+                            {% endif %}
                         </div>
                         {% endif %}
                         <button class="btn btn-sm btn-outline-info" onclick="verHistoricoManutencao({{ viatura.pk }}, '{{ viatura.prefixo }}')" title="Histórico de Manutenção">

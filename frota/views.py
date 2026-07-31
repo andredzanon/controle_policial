@@ -530,8 +530,8 @@ from django.db.models import ProtectedError
 @login_required
 @require_POST
 def api_excluir_viatura(request, pk):
-    if request.user.nivel == 'operador':
-        return JsonResponse({'error': 'Permissão negada.'}, status=403)
+    if request.user.nivel not in ['administrador', 'admin_master']:
+        return JsonResponse({'error': 'Permissão negada. Apenas administradores podem excluir.'}, status=403)
         
     viatura = get_object_or_404(Viatura, pk=pk)
     try:
